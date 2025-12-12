@@ -18,7 +18,8 @@ import {
   Eye,
   Settings,
   FileText,
-  Award
+  Award,
+  Briefcase
 } from 'lucide-react'
 
 interface HomeScreenProps {
@@ -28,10 +29,11 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ firstName, position, businessName }: HomeScreenProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'settings'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'shifts' | 'profile' | 'settings'>('overview')
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: User },
+    { id: 'shifts', label: 'View Shifts', icon: Building },
     { id: 'profile', label: 'View Profile', icon: Eye },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
@@ -113,6 +115,18 @@ export function HomeScreen({ firstName, position, businessName }: HomeScreenProp
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Link href="/my-shifts">
+                    <Button variant="default" className="w-full justify-start">
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      My Shifts
+                    </Button>
+                  </Link>
+                  <Link href="/shifts">
+                    <Button variant="default" className="w-full justify-start">
+                      <Building className="h-4 w-4 mr-2" />
+                      View Available Shifts
+                    </Button>
+                  </Link>
                   <Link href="/profile">
                     <Button variant="outline" className="w-full justify-start">
                       <Eye className="h-4 w-4 mr-2" />
@@ -138,6 +152,31 @@ export function HomeScreen({ firstName, position, businessName }: HomeScreenProp
                     </Button>
                   </Link>
                 </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case 'shifts':
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Available Shifts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 mb-6">
+                  Browse and apply for available pharmacy shifts in your area.
+                </p>
+                <Link href="/shifts">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Building className="h-4 w-4 mr-2" />
+                    View All Shifts
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>

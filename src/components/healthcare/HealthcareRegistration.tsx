@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { PersonalDataForm } from './PersonalDataForm'
 import { LocationBusinessForm } from './LocationBusinessForm'
 import { QuestionsForm } from './QuestionsForm'
 import { LoginForm } from './LoginForm'
 import { HomeScreen } from './HomeScreen'
 import { Progress } from '@/components/ui/progress'
+import { Shield, Building } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 type RegistrationStep = 'personal' | 'location' | 'questions' | 'login' | 'home'
 
@@ -32,6 +35,7 @@ interface RegistrationData {
 }
 
 export function HealthcareRegistration() {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState<RegistrationStep>('personal')
   const [registrationData, setRegistrationData] = useState<RegistrationData>({
     firstName: '',
@@ -75,7 +79,7 @@ export function HealthcareRegistration() {
       case 'location': return 'Location & Business Details'
       case 'questions': return 'Professional Questions'
       case 'login': return 'Verify Your Phone Number'
-      case 'home': return 'Welcome!'
+      case 'home': return 'Registration Complete!'
       default: return ''
     }
   }
@@ -130,11 +134,23 @@ export function HealthcareRegistration() {
       )}
 
       {currentStep === 'home' && (
-        <HomeScreen
-          firstName={registrationData.firstName}
-          position={registrationData.position}
-          businessName={registrationData.businessName}
-        />
+        <div className="text-center py-12">
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+            <Shield className="h-8 w-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
+          <p className="text-gray-600 mb-8">
+            Your healthcare professional registration is complete and verified.
+            You can now browse and apply for available shifts.
+          </p>
+          <Button 
+            onClick={() => router.push('/shifts')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3"
+          >
+            <Building className="h-5 w-5 mr-2" />
+            View Available Shifts
+          </Button>
+        </div>
       )}
     </div>
   )

@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,8 +14,11 @@ import {
   Briefcase,
   Send,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react'
+import { FilterBar } from './FilterBar'
+import { format } from 'date-fns'
 
 interface Shift {
   id: number
@@ -44,8 +48,9 @@ interface Shift {
 }
 
 interface ShiftsResponse {
-  status: boolean
+  success: boolean
   data: Shift[]
+  error?: string
 }
 
 export function ShiftBookingPage() {
@@ -53,17 +58,11 @@ export function ShiftBookingPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [filters, setFilters] = useState({
-    dateFrom: '',
-    dateTo: '',
-    pharmacyId: '',
-    city: '',
-    province: ''
-  })
+  const [itemsPerPage, setItemsPerPage] = useState(10)
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
   const [isApplying, setIsApplying] = useState<number | null>(null)
   const [applicationMessage, setApplicationMessage] = useState<string>('')
-
-  const shiftsPerPage = 10
 
   useEffect(() => {
     fetchShifts()
@@ -123,29 +122,63 @@ export function ShiftBookingPage() {
     }
   }
 
+  // Filter shifts by date range
   const filteredShifts = shifts.filter(shift => {
-    if (filters.dateFrom && new Date(shift.date) < new Date(filters.dateFrom)) return false
-    if (filters.dateTo && new Date(shift.date) > new Date(filters.dateTo)) return false
-    if (filters.pharmacyId && shift.pharmacy_id !== parseInt(filters.pharmacyId)) return false
-    if (filters.city && shift.pharmacy_city.toLowerCase() !== filters.city.toLowerCase()) return false
-    if (filters.province && shift.pharmacy_province.toLowerCase() !== filters.province.toLowerCase()) return false
+    if (!dateFrom && !dateTo) return true
+    
+    const shiftDate = new Date(shift.date.split('-').reverse().join('-'))
+    
+    if (dateFrom && shiftDate < dateFrom) return false
+    if (dateTo && shiftDate > dateTo) return false
+    
     return true
   })
 
-  const paginatedShifts = filteredShifts.slice(
-    (currentPage - 1) * shiftsPerPage,
-    currentPage * shiftsPerPage
-  )
+  // Group shifts by date
+  const groupedShifts = filteredShifts.reduce((acc, shift) => {
+    if (!acc[shift.date]) {
+      acc[shift.date] = []
+    }
+    acc[shift.date].push(shift)
+    return acc
+  }, {} as Record<string, Shift[]>)
 
-  const totalPages = Math.ceil(filteredShifts.length / shiftsPerPage)
+  // Get all unique dates and sort them
+  const sortedDates = Object.keys(groupedShifts).sort((a, b) => {
+    const dateA = new Date(a.split('-').reverse().join('-'))
+    const dateB = new Date(b.split('-').reverse().join('-'))
+    return dateA.getTime() - dateB.getTime()
+  })
 
-  const handleFilterChange = (field: string, value: string) => {
-    setFilters(prev => ({ ...prev, [field]: value }))
+  // Calculate pagination
+  const totalItems = filteredShifts.length
+  const totalPages = Math.ceil(totalItems / itemsPerPage)
+  
+  // Get shifts for current page
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const shiftsForCurrentPage = filteredShifts.slice(startIndex, endIndex)
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value)
+    setCurrentPage(1) // Reset to first page when changing items per page
+  }
+
+  const handleDateChange = (from: Date | undefined, to: Date | undefined) => {
+    setDateFrom(from)
+    setDateTo(to)
+    setCurrentPage(1) // Reset to first page when changing date range
+  }
+
+  const handleClearFilters = () => {
+    setDateFrom(undefined)
+    setDateTo(undefined)
+    setItemsPerPage(10)
     setCurrentPage(1)
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString.split('-').reverse().join('-'))
     return date.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -190,95 +223,57 @@ export function ShiftBookingPage() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Pharmacy Shifts</h1>
-            <p className="text-gray-600">Browse and apply for available shifts in your area</p>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Pharmacy Shifts</h1>
+                <p className="text-gray-600">Browse and apply for available shifts in your area</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/my-shifts'}
+                  className="w-full sm:w-auto"
+                >
+                  My Shifts
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/register'}
+                  className="w-full sm:w-auto"
+                >
+                  Register
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.href = '/profile'}
+                  className="w-full sm:w-auto"
+                >
+                  Profile
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* Filters */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Date From</label>
-                  <input
-                    type="date"
-                    value={filters.dateFrom}
-                    onChange={(e) => handleFilterChange('dateFrom', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Date To</label>
-                  <input
-                    type="date"
-                    value={filters.dateTo}
-                    onChange={(e) => handleFilterChange('dateTo', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Pharmacy</label>
-                  <select
-                    value={filters.pharmacyId}
-                    onChange={(e) => handleFilterChange('pharmacyId', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">All Pharmacies</option>
-                    <option value="7">ABC Pharmacy</option>
-                    <option value="8">XYZ Pharmacy</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">City</label>
-                  <input
-                    type="text"
-                    value={filters.city}
-                    onChange={(e) => handleFilterChange('city', e.target.value)}
-                    placeholder="Enter city name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Province</label>
-                  <input
-                    type="text"
-                    value={filters.province}
-                    onChange={(e) => handleFilterChange('province', e.target.value)}
-                    placeholder="Enter province name"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="md:col-span-2 lg:col-span-5">
-                  <Button
-                    onClick={() => setFilters({ dateFrom: '', dateTo: '', pharmacyId: '', city: '', province: '' })}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Clear Filters
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Filter Bar */}
+          <FilterBar
+            shiftsPerPage={itemsPerPage}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateChange={handleDateChange}
+            onClearFilters={handleClearFilters}
+          />
 
           {/* Status Summary */}
           <Card className="mb-6">
-            <CardContent>
-              <div className="flex items-center justify-between">
+            <CardContent className="py-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900">
                     Available Shifts
                   </h2>
                   <p className="text-sm text-gray-600">
-                    Showing {paginatedShifts.length} of {filteredShifts.length} shifts · Page {currentPage} of {totalPages}
+                    Showing {shiftsForCurrentPage.length} of {filteredShifts.length} shifts · Page {currentPage} of {totalPages}
                   </p>
                 </div>
                 <Badge className="bg-blue-100 text-blue-800">
@@ -288,133 +283,119 @@ export function ShiftBookingPage() {
             </CardContent>
           </Card>
 
-          {/* Shifts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedShifts.map((shift) => (
-              <Card key={shift.id} className="hover:shadow-lg transition-shadow duration-200">
-                <CardContent className="p-6">
-                  {/* Shift Header */}
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        {formatDate(shift.date)}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Clock className="h-4 w-4" />
-                        <span>{formatTime(shift.from)} - {formatTime(shift.to)}</span>
-                        <span className="ml-2">· {shift.hours} hours</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      {shift.applied ? (
-                        <Badge className="bg-green-100 text-green-800">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Applied
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-800">
-                          Available
-                        </Badge>
-                      )}
-                    </div>
+          {/* Shifts by Date */}
+          {sortedDates.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No shifts found in this date range</h3>
+                <p className="text-gray-600">Try adjusting your filters or expanding the date range</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-8">
+              {sortedDates.map(date => (
+                <div key={date}>
+                  {/* Date Header */}
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">
+                      {formatDate(date)}
+                    </h2>
                   </div>
-
-                  {/* Pharmacy Info */}
-                  <div className="border-t pt-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Briefcase className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <h4 className="font-medium text-gray-900">{shift.pharmacy_name}</h4>
-                        <p className="text-sm text-gray-600">ID: {shift.pharmacy_id}</p>
-                      </div>
-                    </div>
-                  <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">{shift.pharmacy_city}, {shift.pharmacy_province}</p>
-                        <p className="text-xs text-gray-500">{shift.address}</p>
-                      </div>
-                    </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-gray-400" />
-                      <div>
-                        <p className="text-sm text-gray-600">{shift.pharmacy_phone}</p>
-                        <p className="text-xs text-gray-500">{shift.pharmacy_postcode}</p>
-                      </div>
-                    </div>
+                  
+                  {/* Shift Cards for this date */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {groupedShifts[date].map((shift) => (
+                      <Card key={shift.id} className="hover:shadow-lg transition-shadow duration-200">
+                        <CardContent className="p-6">
+                          {/* Time and Hours */}
+                          <div className="mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {formatTime(shift.from)} – {formatTime(shift.to)} · {shift.hours} hours
+                            </h3>
+                          </div>
+                          
+                          {/* Address and City */}
+                          <div className="mb-4">
+                            <h4 className="font-medium text-gray-900">{shift.addres.title} · {shift.pharmacy_city}</h4>
+                            <p className="text-sm text-gray-600 truncate">
+                              {shift.address}
+                            </p>
+                          </div>
+                          
+                          {/* Meta Information */}
+                          <div className="flex justify-between items-center mb-4">
+                            <div className="text-sm">
+                              <span className="font-medium">Hour rate:</span> ${shift.hour_rate}/hour
+                            </div>
+                            <div className="text-sm">
+                              <span className="font-medium">Total:</span> ${shift.total}
+                            </div>
+                            <Badge className={shift.applied ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                              {shift.applied ? "Applied" : "Open"}
+                            </Badge>
+                          </div>
+                          
+                          {/* Applied State or Action Button */}
+                          {shift.applied ? (
+                            <div className="border-t pt-4">
+                              <Badge className="bg-green-100 text-green-800 mb-2 w-full justify-center">
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Already sent PID
+                              </Badge>
+                              {shift.applied_at && (
+                                <p className="text-sm text-gray-600 mt-2">
+                                  <span className="font-medium">Applied at:</span> {new Date(shift.applied_at).toLocaleString()}
+                                </p>
+                              )}
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Applied:</span> {shift.applied.toString()}
+                              </p>
+                              {shift.applied_msg && (
+                                <p className="text-sm text-gray-600">
+                                  <span className="font-medium">Message:</span> {shift.applied_msg}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="border-t pt-4 space-y-2">
+                              <Link href={`/shifts/${shift.id}`}>
+                                <Button variant="outline" className="w-full">
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </Button>
+                              </Link>
+                              <Button
+                                onClick={() => applyForShift(shift.id)}
+                                disabled={isApplying === shift.id}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+                              >
+                                {isApplying === shift.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Applying...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Send className="h-4 w-4" />
+                                    Send PID
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-
-                  {/* Shift Details */}
-                  <div className="border-t pt-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                      <div>
-                        <span className="font-medium">Hourly Rate:</span>
-                        <span className="ml-2">${shift.hour_rate}/hour</span>
-                      </div>
-                      <div>
-                        <span className="font-medium">Total Shift:</span>
-                        <span className="ml-2">${shift.total}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Address for Application */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Application Address</h4>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <div>
-                        <strong>{shift.addres.title}</strong>
-                        <p>{shift.addres.phone} · {shift.addres.city}, {shift.addres.postcode}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Apply Button */}
-                  <div className="border-t pt-4">
-                    {shift.applied ? (
-                      <div className="text-center">
-                        <Badge className="bg-green-100 text-green-800 mb-2">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Application Sent
-                        </Badge>
-                        {shift.applied_msg && (
-                          <p className="text-sm text-green-700 mt-2">{shift.applied_msg}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <Button
-                        onClick={() => applyForShift(shift.id)}
-                        disabled={isApplying === shift.id}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
-                      >
-                        {isApplying === shift.id ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Applying...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4" />
-                            Send Application
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Application Message */}
           {applicationMessage && (
             <Card className="mt-6">
-              <CardContent className="text-center">
+              <CardContent className="text-center py-6">
                 <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Application Successful!</h3>
                 <p className="text-gray-600">{applicationMessage}</p>
@@ -424,30 +405,54 @@ export function ShiftBookingPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-8">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2"
-              >
-                Previous
-              </Button>
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
+              <div className="text-sm text-gray-600">
+                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} shifts
               </div>
-              
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2"
-              >
-                Next
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    // Show first, last, current, and surrounding pages
+                    let pageNum: number
+                    if (totalPages <= 5) {
+                      pageNum = i + 1
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i
+                    } else {
+                      pageNum = currentPage - 2 + i
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={pageNum === currentPage ? "default" : "outline"}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="w-10 h-10 p-0"
+                      >
+                        {pageNum}
+                      </Button>
+                    )
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </div>
