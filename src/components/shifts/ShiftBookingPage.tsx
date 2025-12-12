@@ -15,7 +15,9 @@ import {
   Send,
   CheckCircle,
   AlertCircle,
-  Eye
+  Eye,
+  Activity,
+  UserCircle
 } from 'lucide-react'
 import { FilterBar } from './FilterBar'
 import { format } from 'date-fns'
@@ -218,41 +220,61 @@ export function ShiftBookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="max-w-6xl mx-auto">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Pharmacy Shifts</h1>
-                <p className="text-gray-600">Browse and apply for available shifts in your area</p>
+              {/* Logo and Title */}
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
+                  <Activity className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Pharmacy Shifts</h1>
+                  <p className="text-sm text-gray-600">Find your next opportunity</p>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.href = '/my-shifts'}
-                  className="w-full sm:w-auto"
-                >
-                  My Shifts
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.href = '/register'}
-                  className="w-full sm:w-auto"
-                >
-                  Register
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.href = '/profile'}
-                  className="w-full sm:w-auto"
-                >
-                  Profile
-                </Button>
+
+              {/* Navigation Tabs - Segmented Control */}
+              <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+                <Link href="/my-shifts">
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    My Shifts
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                  >
+                    <UserCircle className="h-4 w-4 mr-2" />
+                    Register
+                  </Button>
+                </Link>
+                <Link href="/profile">
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto space-y-6">
 
           {/* Filter Bar */}
           <FilterBar
@@ -265,23 +287,23 @@ export function ShiftBookingPage() {
           />
 
           {/* Status Summary */}
-          <Card className="mb-6">
-            <CardContent className="py-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    Available Shifts
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    Showing {shiftsForCurrentPage.length} of {filteredShifts.length} shifts · Page {currentPage} of {totalPages}
-                  </p>
-                </div>
-                <Badge className="bg-blue-100 text-blue-800">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  Available Shifts
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages} · {shiftsForCurrentPage.length} shifts on this page
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 text-base shadow-md shadow-blue-200">
                   {filteredShifts.length} shifts found
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Shifts by Date */}
           {sortedDates.length === 0 ? (
@@ -294,95 +316,166 @@ export function ShiftBookingPage() {
           ) : (
             <div className="space-y-8">
               {sortedDates.map(date => (
-                <div key={date}>
-                  {/* Date Header */}
-                  <div className="mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">
-                      {formatDate(date)}
-                    </h2>
+                <div key={date} className="relative">
+                  {/* Date Header - Sticky with gradient background */}
+                  <div className="sticky top-20 z-40 -mx-4 px-4 py-4 mb-6 bg-gradient-to-r from-gray-50 to-blue-50 backdrop-blur-sm border-y border-gray-200 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-lg shadow-sm">
+                        <Calendar className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">
+                          {formatDate(date)}
+                        </h2>
+                        <p className="text-sm text-gray-600">
+                          {groupedShifts[date].length} {groupedShifts[date].length === 1 ? 'shift' : 'shifts'} available
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   
                   {/* Shift Cards for this date */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {groupedShifts[date].map((shift) => (
-                      <Card key={shift.id} className="hover:shadow-lg transition-shadow duration-200">
-                        <CardContent className="p-6">
-                          {/* Time and Hours */}
-                          <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              {formatTime(shift.from)} – {formatTime(shift.to)} · {shift.hours} hours
-                            </h3>
-                          </div>
-                          
-                          {/* Address and City */}
-                          <div className="mb-4">
-                            <h4 className="font-medium text-gray-900">{shift.addres.title} · {shift.pharmacy_city}</h4>
-                            <p className="text-sm text-gray-600 truncate">
-                              {shift.address}
-                            </p>
-                          </div>
-                          
-                          {/* Meta Information */}
-                          <div className="flex justify-between items-center mb-4">
-                            <div className="text-sm">
-                              <span className="font-medium">Hour rate:</span> ${shift.hour_rate}/hour
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-medium">Total:</span> ${shift.total}
-                            </div>
-                            <Badge className={shift.applied ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                              {shift.applied ? "Applied" : "Open"}
-                            </Badge>
-                          </div>
-                          
-                          {/* Applied State or Action Button */}
-                          {shift.applied ? (
-                            <div className="border-t pt-4">
-                              <Badge className="bg-green-100 text-green-800 mb-2 w-full justify-center">
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Already sent PID
-                              </Badge>
-                              {shift.applied_at && (
-                                <p className="text-sm text-gray-600 mt-2">
-                                  <span className="font-medium">Applied at:</span> {new Date(shift.applied_at).toLocaleString()}
+                      <Card 
+                        key={shift.id} 
+                        className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 border-gray-200 overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50"
+                      >
+                        <CardContent className="p-0">
+                          {/* Card Header with Pharmacy Avatar */}
+                          <div className="p-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                            <div className="flex items-start gap-3">
+                              {/* Pharmacy Avatar */}
+                              <div className="flex-shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center border border-gray-200">
+                                  <Briefcase className="h-6 w-6 text-blue-600" />
+                                </div>
+                              </div>
+                              
+                              {/* Pharmacy Info */}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-gray-900 truncate text-base">
+                                  {shift.addres.title}
+                                </h4>
+                                <p className="text-sm text-gray-600 flex items-center gap-1 mt-0.5">
+                                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                                  {shift.pharmacy_city}
                                 </p>
-                              )}
-                              <p className="text-sm text-gray-600">
-                                <span className="font-medium">Applied:</span> {shift.applied.toString()}
-                              </p>
-                              {shift.applied_msg && (
-                                <p className="text-sm text-gray-600">
-                                  <span className="font-medium">Message:</span> {shift.applied_msg}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="border-t pt-4 space-y-2">
-                              <Link href={`/shifts/${shift.id}`}>
-                                <Button variant="outline" className="w-full">
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </Button>
-                              </Link>
-                              <Button
-                                onClick={() => applyForShift(shift.id)}
-                                disabled={isApplying === shift.id}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+                              </div>
+
+                              {/* Status Badge */}
+                              <Badge 
+                                className={`${
+                                  shift.applied 
+                                    ? 'bg-green-100 text-green-700 border-green-200' 
+                                    : 'bg-blue-100 text-blue-700 border-blue-200'
+                                } shadow-sm`}
                               >
-                                {isApplying === shift.id ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Applying...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Send className="h-4 w-4" />
-                                    Send PID
-                                  </>
-                                )}
-                              </Button>
+                                {shift.applied ? 'Applied' : 'Open'}
+                              </Badge>
                             </div>
-                          )}
+                          </div>
+
+                          {/* Card Body */}
+                          <div className="p-6 space-y-4">
+                            {/* Time and Duration */}
+                            <div className="flex items-center gap-2 text-gray-700">
+                              <div className="p-1.5 bg-blue-50 rounded-lg">
+                                <Clock className="h-4 w-4 text-blue-600" />
+                              </div>
+                              <span className="font-semibold text-base">
+                                {formatTime(shift.from)} – {formatTime(shift.to)}
+                              </span>
+                              <Badge variant="outline" className="ml-auto">
+                                {shift.hours}h
+                              </Badge>
+                            </div>
+
+                            {/* Address */}
+                            <div className="flex items-start gap-2 text-sm">
+                              <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                              <p className="text-gray-600 line-clamp-2">
+                                {shift.address}
+                              </p>
+                            </div>
+
+                            {/* Financial Info - Grid Layout */}
+                            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+                              <div className="space-y-1">
+                                <p className="text-xs text-gray-500 font-medium">Hourly Rate</p>
+                                <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {shift.hour_rate}
+                                </p>
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs text-gray-500 font-medium">Total Earning</p>
+                                <p className="text-lg font-bold text-green-600 flex items-center gap-1">
+                                  <DollarSign className="h-4 w-4" />
+                                  {shift.total}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Footer - Actions */}
+                          <div className="px-6 pb-6">
+                            {shift.applied ? (
+                              <div className="space-y-3">
+                                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                    <span className="font-semibold text-green-900">Application Sent</span>
+                                  </div>
+                                  {shift.applied_at && (
+                                    <p className="text-xs text-green-700">
+                                      {new Date(shift.applied_at).toLocaleString()}
+                                    </p>
+                                  )}
+                                  {shift.applied_msg && (
+                                    <p className="text-sm text-green-800 mt-2">
+                                      {shift.applied_msg}
+                                    </p>
+                                  )}
+                                </div>
+                                <Link href={`/shifts/${shift.id}`} className="block">
+                                  <Button variant="outline" className="w-full hover:bg-gray-50">
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </Button>
+                                </Link>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <Link href={`/shifts/${shift.id}`} className="block">
+                                  <Button 
+                                    variant="outline" 
+                                    className="w-full hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View Details
+                                  </Button>
+                                </Link>
+                                <Button
+                                  onClick={() => applyForShift(shift.id)}
+                                  disabled={isApplying === shift.id}
+                                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-200 hover:shadow-xl transition-all duration-200"
+                                >
+                                  {isApplying === shift.id ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                      Applying...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Send className="h-4 w-4 mr-2" />
+                                      Send PID
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -394,64 +487,74 @@ export function ShiftBookingPage() {
 
           {/* Application Message */}
           {applicationMessage && (
-            <Card className="mt-6">
-              <CardContent className="text-center py-6">
-                <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Application Successful!</h3>
-                <p className="text-gray-600">{applicationMessage}</p>
-              </CardContent>
-            </Card>
+            <div className="bg-white rounded-2xl border border-green-200 shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                  <CheckCircle className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Application Successful!</h3>
+                <p className="text-gray-700">{applicationMessage}</p>
+              </div>
+            </div>
           )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-8">
-              <div className="text-sm text-gray-600">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} shifts
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    // Show first, last, current, and surrounding pages
-                    let pageNum: number
-                    if (totalPages <= 5) {
-                      pageNum = i + 1
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i
-                    } else {
-                      pageNum = currentPage - 2 + i
-                    }
-                    
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={pageNum === currentPage ? "default" : "outline"}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className="w-10 h-10 p-0"
-                      >
-                        {pageNum}
-                      </Button>
-                    )
-                  })}
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="text-sm text-gray-600 font-medium">
+                  Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} shifts
                 </div>
-                
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      // Show first, last, current, and surrounding pages
+                      let pageNum: number
+                      if (totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i
+                      } else {
+                        pageNum = currentPage - 2 + i
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={pageNum === currentPage ? "default" : "outline"}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-10 h-10 p-0 transition-all duration-200 ${
+                            pageNum === currentPage 
+                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             </div>
           )}
