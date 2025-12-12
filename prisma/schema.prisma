@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model HealthcareProfessional {
+  id                   String   @id @default(cuid())
+  firstName            String
+  lastName             String
+  email                String   @unique
+  phone                String   @unique
+  password             String
+  address              String
+  city                 String
+  districtId           String
+  postcode             String
+  position             String
+  licence              String
+  province             String
+  licenceImage         String
+  profileImage         String
+  lat                  Float
+  lng                  Float
+  businessName         String
+  gst                  String
+  businessType         String?
+  experience           Int?     // Years of experience
+  fcmToken             String?
+  completed            Boolean  @default(false)
+  hasBank              Boolean  @default(false)
+  hasLanguages         Boolean  @default(false)
+  hasSkills            Boolean  @default(false)
+  hasSoftwares         Boolean  @default(false)
+  status               String   @default("active") // active, inactive, suspended
+  isVerified           Boolean  @default(false)
+  phoneVerified        Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  answers              HealthcareAnswer[]
+  otpCodes              OtpCode[]
+  languages            HealthcareLanguage[]
+  skills                HealthcareSkill[]
+  softwares             HealthcareSoftware[]
+}
+
+model HealthcareQuestion {
+  id       Int    @id
+  question String
+  
+  // Relations
+  answers  HealthcareAnswer[]
+}
+
+model HealthcareAnswer {
+  id           Int    @id
+  answer       Boolean
+  createdAt    DateTime @default(now())
+  
+  // Relations
+  professionalId String
+  questionId   Int
+  professional HealthcareProfessional @relation(fields: [professionalId], references: [id])
+  question     HealthcareQuestion   @relation(fields: [questionId], references: [id])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  code      String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  // Relations
+  professionalId String
+  professional HealthcareProfessional @relation(fields: [professionalId], references: [id])
+}
+
+model HealthcareLanguage {
+  id           String @id @default(cuid())
+  name         String
+  professionalId String
+  
+  // Relations
+  professional HealthcareProfessional @relation(fields: [professionalId], references: [id])
+}
+
+model HealthcareSkill {
+  id           String @id @default(cuid())
+  name         String
+  professionalId String
+  
+  // Relations
+  professional HealthcareProfessional @relation(fields: [professionalId], references: [id])
+}
+
+model HealthcareSoftware {
+  id           String @id @default(cuid())
+  name         String
+  professionalId String
+  
+  // Relations
+  professional HealthcareProfessional @relation(fields: [professionalId], references: [id])
+}
