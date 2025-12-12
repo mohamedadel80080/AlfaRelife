@@ -68,11 +68,11 @@ export function FilterBar({
   return (
     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden transition-all duration-300">
       {/* Filter Header - Always Visible */}
-      <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+      <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white rounded-lg shadow-sm">
-              <Filter className="h-5 w-5 text-blue-600" />
+              <Filter className="h-5 w-5 text-teal-700" />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900">Filters</h3>
@@ -81,7 +81,7 @@ export function FilterBar({
           </div>
           <div className="flex items-center gap-3">
             {hasActiveFilters && (
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200">
+              <Badge variant="secondary" className="bg-teal-100 text-teal-700 border-teal-200">
                 {[dateFrom && 'Date', shiftsPerPage !== 10 && 'Per Page'].filter(Boolean).length} active
               </Badge>
             )}
@@ -122,7 +122,7 @@ export function FilterBar({
                   onClick={() => onItemsPerPageChange(value)}
                   className={`px-6 py-2.5 rounded-full font-medium transition-all duration-200 ${
                     shiftsPerPage === value
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                      ? 'bg-teal-700 text-white shadow-md shadow-teal-200'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -179,15 +179,15 @@ export function FilterBar({
                       head_row: "flex",
                       head_cell: "text-gray-500 rounded-md w-9 font-normal text-[0.8rem]",
                       row: "flex w-full mt-2",
-                      cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-100/50 [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-blue-50 rounded-md transition-colors",
-                      day_range_start: "day-range-start bg-blue-600 text-white hover:bg-blue-700",
-                      day_range_end: "day-range-end bg-blue-600 text-white hover:bg-blue-700",
-                      day_selected: "bg-blue-600 text-white hover:bg-blue-700 hover:text-white focus:bg-blue-600 focus:text-white",
+                      cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-100/50 [&:has([aria-selected])]:bg-teal-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-teal-50 rounded-md transition-colors",
+                      day_range_start: "day-range-start bg-teal-700 text-white hover:bg-teal-800",
+                      day_range_end: "day-range-end bg-teal-700 text-white hover:bg-teal-800",
+                      day_selected: "bg-teal-700 text-white hover:bg-teal-800 hover:text-white focus:bg-teal-700 focus:text-white",
                       day_today: "bg-gray-100 text-gray-900 font-semibold",
                       day_outside: "day-outside text-gray-400 opacity-50 aria-selected:bg-gray-100/50 aria-selected:text-gray-500 aria-selected:opacity-30",
                       day_disabled: "text-gray-400 opacity-50",
-                      day_range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-900",
+                      day_range_middle: "aria-selected:bg-teal-50 aria-selected:text-teal-900",
                       day_hidden: "invisible",
                     }}
                   />
@@ -206,7 +206,7 @@ export function FilterBar({
                     <Button
                       onClick={() => setIsCalendarOpen(false)}
                       disabled={!dateRange?.from || !dateRange?.to}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      className="flex-1 bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-800 hover:to-teal-900"
                     >
                       Apply
                     </Button>

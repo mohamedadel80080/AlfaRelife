@@ -200,7 +200,7 @@ export function ShiftBookingPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-700"></div>
         <span className="ml-2 text-gray-600">Loading shifts...</span>
       </div>
     )
@@ -212,7 +212,7 @@ export function ShiftBookingPage() {
         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Shifts</h3>
         <p className="text-gray-600 mb-4">{error}</p>
-        <Button onClick={fetchShifts} className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button onClick={fetchShifts} className="bg-teal-700 hover:bg-teal-800 text-white">
           Retry Loading Shifts
         </Button>
       </div>
@@ -220,7 +220,7 @@ export function ShiftBookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-teal-50/30 to-gray-50">
       {/* Sticky Header */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
         <div className="container mx-auto px-4 py-4">
@@ -228,7 +228,7 @@ export function ShiftBookingPage() {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
               {/* Logo and Title */}
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
+                <div className="p-2.5 bg-gradient-to-br from-teal-700 to-teal-800 rounded-xl shadow-lg shadow-teal-200">
                   <Activity className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -298,7 +298,7 @@ export function ShiftBookingPage() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-4 py-2 text-base shadow-md shadow-blue-200">
+                <Badge className="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-2 text-base shadow-md shadow-teal-200">
                   {filteredShifts.length} shifts found
                 </Badge>
               </div>
@@ -318,10 +318,10 @@ export function ShiftBookingPage() {
               {sortedDates.map(date => (
                 <div key={date} className="relative">
                   {/* Date Header - Sticky with gradient background */}
-                  <div className="sticky top-20 z-40 -mx-4 px-4 py-4 mb-6 bg-gradient-to-r from-gray-50 to-blue-50 backdrop-blur-sm border-y border-gray-200 shadow-sm">
+                  <div className="sticky top-20 z-40 -mx-4 px-4 py-4 mb-6 bg-gradient-to-r from-gray-50 to-teal-50 backdrop-blur-sm border-y border-gray-200 shadow-sm">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-white rounded-lg shadow-sm">
-                        <Calendar className="h-5 w-5 text-blue-600" />
+                        <Calendar className="h-5 w-5 text-teal-700" />
                       </div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
@@ -343,12 +343,12 @@ export function ShiftBookingPage() {
                       >
                         <CardContent className="p-0">
                           {/* Card Header with Pharmacy Avatar */}
-                          <div className="p-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+                          <div className="p-6 pb-4 bg-gradient-to-r from-teal-50 to-teal-100 border-b border-gray-100">
                             <div className="flex items-start gap-3">
                               {/* Pharmacy Avatar */}
                               <div className="flex-shrink-0">
                                 <div className="w-12 h-12 rounded-xl bg-white shadow-md flex items-center justify-center border border-gray-200">
-                                  <Briefcase className="h-6 w-6 text-blue-600" />
+                                  <Briefcase className="h-6 w-6 text-teal-700" />
                                 </div>
                               </div>
                               
@@ -368,7 +368,7 @@ export function ShiftBookingPage() {
                                 className={`${
                                   shift.applied 
                                     ? 'bg-green-100 text-green-700 border-green-200' 
-                                    : 'bg-blue-100 text-blue-700 border-blue-200'
+                                    : 'bg-teal-100 text-teal-700 border-teal-200'
                                 } shadow-sm`}
                               >
                                 {shift.applied ? 'Applied' : 'Open'}
@@ -380,8 +380,8 @@ export function ShiftBookingPage() {
                           <div className="p-6 space-y-4">
                             {/* Time and Duration */}
                             <div className="flex items-center gap-2 text-gray-700">
-                              <div className="p-1.5 bg-blue-50 rounded-lg">
-                                <Clock className="h-4 w-4 text-blue-600" />
+                              <div className="p-1.5 bg-teal-50 rounded-lg">
+                                <Clock className="h-4 w-4 text-teal-700" />
                               </div>
                               <span className="font-semibold text-base">
                                 {formatTime(shift.from)} – {formatTime(shift.to)}
@@ -459,7 +459,7 @@ export function ShiftBookingPage() {
                                 <Button
                                   onClick={() => applyForShift(shift.id)}
                                   disabled={isApplying === shift.id}
-                                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-200 hover:shadow-xl transition-all duration-200"
+                                  className="w-full bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-800 hover:to-teal-900 text-white shadow-lg shadow-teal-200 hover:shadow-xl transition-all duration-200"
                                 >
                                   {isApplying === shift.id ? (
                                     <>
@@ -536,7 +536,7 @@ export function ShiftBookingPage() {
                           onClick={() => setCurrentPage(pageNum)}
                           className={`w-10 h-10 p-0 transition-all duration-200 ${
                             pageNum === currentPage 
-                              ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md' 
+                              ? 'bg-gradient-to-r from-teal-700 to-teal-800 text-white shadow-md' 
                               : 'hover:bg-gray-50'
                           }`}
                         >

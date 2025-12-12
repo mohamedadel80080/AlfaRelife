@@ -11,6 +11,19 @@ const config: Config = {
   theme: {
   	extend: {
   		colors: {
+  			teal: {
+  				50: '#e6f2f3',
+  				100: '#cce5e7',
+  				200: '#99cbcf',
+  				300: '#66b1b7',
+  				400: '#33979f',
+  				500: '#007d87',
+  				600: '#00646c',
+  				700: '#004248', /* Primary color */
+  				800: '#003336',
+  				900: '#001f24',
+  				950: '#001112',
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {
