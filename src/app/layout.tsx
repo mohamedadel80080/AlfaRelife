@@ -14,24 +14,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "Healthcare Staffing Platform - Pharmacy Shifts",
+  description: "Professional healthcare staffing and shift management platform. Find and manage pharmacy shifts with ease.",
+  keywords: ["healthcare", "pharmacy", "shifts", "staffing", "medical", "professionals"],
+  authors: [{ name: "Healthcare Staffing" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: [
+      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/icons/ios/32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/ios/64.png", sizes: "64x64", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/ios/180.png", sizes: "180x180", type: "image/png" },
+    ],
   },
+  manifest: "/manifest.json",
+  themeColor: "#004248",
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "Healthcare Staffing Platform",
+    description: "Professional pharmacy shift management",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
+    title: "Healthcare Staffing Platform",
+    description: "Professional pharmacy shift management",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "HealthStaff",
   },
 };
 

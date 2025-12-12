@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,8 @@ import {
   AlertCircle,
   Eye,
   Activity,
-  UserCircle
+  UserCircle,
+  LogIn
 } from 'lucide-react'
 import { FilterBar } from './FilterBar'
 import { format } from 'date-fns'
@@ -228,26 +230,34 @@ export function ShiftBookingPage() {
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
               {/* Logo and Title */}
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-teal-700 to-teal-800 rounded-xl shadow-lg shadow-teal-200">
-                  <Activity className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-center">
+                  <Image 
+                    src="/logo.svg" 
+                    alt="Alfa Reliefe Logo" 
+                    width={48} 
+                    height={48}
+                    className="object-contain"
+                    priority
+                  />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Pharmacy Shifts</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">ALFA RELIEF</h1>
                   <p className="text-sm text-gray-600">Find your next opportunity</p>
                 </div>
               </div>
 
               {/* Navigation Tabs - Segmented Control */}
               <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
-                <Link href="/my-shifts">
+                <Link href="/login">
                   <Button 
                     variant="ghost" 
                     className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
                   >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    My Shifts
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Login
                   </Button>
                 </Link>
+               
                 <Link href="/register">
                   <Button 
                     variant="ghost" 
@@ -255,6 +265,15 @@ export function ShiftBookingPage() {
                   >
                     <UserCircle className="h-4 w-4 mr-2" />
                     Register
+                  </Button>
+                </Link>
+                 <Link href="/my-shifts">
+                  <Button 
+                    variant="ghost" 
+                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                  >
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    My Shifts
                   </Button>
                 </Link>
                 <Link href="/profile">
