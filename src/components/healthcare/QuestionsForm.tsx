@@ -7,16 +7,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, HelpCircle } from 'lucide-react'
-
-interface Question {
-  id: number
-  question: string
-}
-
-interface Answer {
-  id: number
-  answer: boolean
-}
+import { fetchQuestions, submitAnswers, getAuthToken, type Question, type Answer } from '@/lib/api'
 
 interface QuestionsFormProps {
   onComplete: () => void
@@ -28,37 +19,45 @@ export function QuestionsForm({ onComplete, onBack }: QuestionsFormProps) {
   const [answers, setAnswers] = useState<Answer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Mock questions data - in real app, this would come from API
-  const mockQuestions: Question[] = [
-    { id: 3, question: "Have you ever been convicted of a felony or criminal offense that would affect your ability to practice pharmacy?" },
-    { id: 4, question: "Have you ever been found guilty of professional malpractice, negligence, or misconduct in any healthcare setting?" },
-    { id: 5, question: "Are you legally eligible to work in Canada without any restrictions?" },
-    { id: 6, question: "Have you ever had your Provincial License restricted, suspended, or revoked for any reason?" },
-    { id: 7, question: "Is your license currently registered as active and in good standing with your provincial regulatory authority?" }
-  ]
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate API call to fetch questions
-    const fetchQuestions = async () => {
+    // Fetch questions from API
+    const loadQuestions = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setQuestions(mockQuestions)
-        
-        // Initialize answers with default false values
-        const initialAnswers = mockQuestions.map(q => ({
-          id: q.id,
-          answer: false
-        }))
-        setAnswers(initialAnswers)
+        setIsLoading(true)
+        setError(null)
+
+        const token = getAuthToken()
+        if (!token) {
+          throw new Error('No authentication token found. Please register first.')
+        }
+
+        // Fetch questions from API
+        const response = await fetchQuestions()
+
+        if (response.data && Array.isArray(response.data)) {
+          setQuestions(response.data)
+          
+          // Initialize answers with default false values
+          const initialAnswers = response.data.map(q => ({
+            id: q.id,
+            answer: false
+          }))
+          setAnswers(initialAnswers)
+        } else {
+          throw new Error('Invalid response format from questions API')
+        }
       } catch (error) {
         console.error('Error fetching questions:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load questions'
+        setError(errorMessage)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchQuestions()
+    loadQuestions()
   }, [])
 
   const handleAnswerChange = (questionId: number, answer: boolean) => {
@@ -82,23 +81,27 @@ export function QuestionsForm({ onComplete, onBack }: QuestionsFormProps) {
     }
 
     setIsSubmitting(true)
+    setError(null)
     
     try {
-      // Prepare data for API submission
-      const submissionData = answers.map((answer, index) => ({
-        [`question[${index}][id]`]: answer.id,
-        [`question[${index}][answer]`]: answer.answer
-      })).reduce((acc, curr) => ({ ...acc, ...curr }), {})
+      const token = getAuthToken()
+      if (!token) {
+        throw new Error('No authentication token found. Please register first.')
+      }
 
-      console.log('Submitting answers:', submissionData)
+      console.log('Submitting answers:', answers)
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Submit answers to API using utility function
+      await submitAnswers(answers)
+
+      console.log('✅ Answers submitted successfully!')
       
       // Call the onComplete callback to proceed to next step
       onComplete()
     } catch (error) {
       console.error('Error submitting answers:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit answers. Please try again.'
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -115,6 +118,14 @@ export function QuestionsForm({ onComplete, onBack }: QuestionsFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <Alert className="border-red-500 bg-red-50">
+          <AlertDescription className="text-red-800">
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

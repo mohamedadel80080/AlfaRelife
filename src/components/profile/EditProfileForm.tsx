@@ -17,9 +17,10 @@ import {
   Eye, 
   EyeOff,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Lock
 } from 'lucide-react'
-import { HealthcareProfessional, ProfileFormData, FormErrors, POSITIONS, PROVINCES, BUSINESS_TYPES } from '@/types/profile'
+import { POSITIONS, PROVINCES, BUSINESS_TYPES } from '@/types/profile'
 import { useProfileForm } from '@/hooks/useProfileForm'
 import { ProfilePictureUpload } from './ProfilePictureUpload'
 
@@ -92,7 +93,7 @@ export function EditProfileForm() {
         </CardHeader>
         <CardContent>
           <ProfilePictureUpload
-            currentImage={profile.profileImage}
+            currentImage={profile.image}
             onImageChange={handleFileChange}
             isUploading={isUploading}
           />
@@ -171,6 +172,51 @@ export function EditProfileForm() {
               {errors.phone && (
                 <p className="text-sm text-red-500">{errors.phone}</p>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">New Password (optional)</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password || ''}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  placeholder="Enter new password"
+                  disabled={isSaving}
+                />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">Leave blank to keep current password</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="passwordConfirmation">Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  id="passwordConfirmation"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.passwordConfirmation || ''}
+                  onChange={(e) => handleInputChange('passwordConfirmation', e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={isSaving}
+                />
+                <button
+                  type="button"
+                  onClick={toggleConfirmPasswordVisibility}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           </div>
 

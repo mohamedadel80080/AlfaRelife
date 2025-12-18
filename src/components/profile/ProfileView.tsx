@@ -18,14 +18,16 @@ import {
   CheckCircle,
   AlertCircle,
   Lock,
-  Settings
+  Settings,
+  Languages,
+  Award,
+  Monitor
 } from 'lucide-react'
-import { HealthcareProfessional } from '@/types/profile'
 import { useProfile } from '@/hooks/useProfile'
 import { format } from 'date-fns'
 
 export function ProfileView() {
-  const { profile, isLoading, error } = useProfile()
+  const { profile, isLoading, error, refetch, clearError } = useProfile()
 
   if (isLoading) {
     return (
@@ -90,16 +92,16 @@ export function ProfileView() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: number) => {
     switch (status) {
-      case 'active':
+      case 1:
         return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Active</Badge>
-      case 'inactive':
-        return <Badge className="bg-gray-100 text-gray-800"><Clock className="h-3 w-3 mr-1" />Inactive</Badge>
-      case 'suspended':
+      case 0:
+        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="h-3 w-3 mr-1" />Under Review</Badge>
+      case -1:
         return <Badge className="bg-red-100 text-red-800"><AlertCircle className="h-3 w-3 mr-1" />Suspended</Badge>
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>
+        return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>
     }
   }
 
@@ -112,7 +114,7 @@ export function ProfileView() {
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
                 <AvatarImage 
-                  src={profile?.profileImage || '/api/placeholder/80/80'} 
+                  src={profile?.image || '/api/placeholder/80/80'} 
                   alt="Profile" 
                   onError={(e) => {
                     console.error('Profile image failed to load:', e)
@@ -121,18 +123,18 @@ export function ProfileView() {
                   }}
                 />
                 <AvatarFallback className="text-lg">
-                  {profile?.firstName?.charAt(0).toUpperCase() || 'P'}
-                  {profile?.lastName?.charAt(0).toUpperCase() || 'U'}
+                  {profile?.first_name?.charAt(0).toUpperCase() || 'P'}
+                  {profile?.last_name?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {profile?.firstName || 'Unknown'} {profile?.lastName || 'User'}
+                  {profile?.first_name || 'Unknown'} {profile?.last_name || 'User'}
                 </h2>
                 <p className="text-gray-600">{profile?.position || 'Not specified'}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  {getStatusBadge(profile?.status || 'inactive')}
-                  {profile?.isVerified && (
+                  {getStatusBadge(profile?.status || 0)}
+                  {profile?.status === 1 && (
                     <Badge className="bg-blue-100 text-blue-800">
                       <Shield className="h-3 w-3 mr-1" />
                       Verified
@@ -167,7 +169,7 @@ export function ProfileView() {
               <div>
                 <label className="text-sm font-medium text-gray-500">Full Name</label>
                 <p className="text-gray-900">
-                  {profile?.firstName || 'Unknown'} {profile?.lastName || 'User'}
+                  {profile?.first_name || 'Unknown'} {profile?.last_name || 'User'}
                 </p>
               </div>
               <div>
@@ -182,7 +184,7 @@ export function ProfileView() {
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-400" />
                   <p className="text-gray-900">{profile?.phone || 'Not provided'}</p>
-                  {profile.phoneVerified && (
+                  {profile.status === 1 && (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   )}
                 </div>
@@ -229,18 +231,18 @@ export function ProfileView() {
                 <p className="text-gray-900">{profile.licence}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Years of Experience</label>
-                <p className="text-gray-900">{profile.experience || 'Not specified'}</p>
+                <label className="text-sm font-medium text-gray-500">Experience</label>
+                <p className="text-gray-900">{profile.experience ? 'Yes' : 'No experience specified'}</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Business Name</label>
-                <p className="text-gray-900">{profile?.businessName || 'Not specified'}</p>
+                <p className="text-gray-900">{profile?.business_name || 'Not specified'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Business Type</label>
-                <p className="text-gray-900">{profile.businessType || 'Not specified'}</p>
+                <p className="text-gray-900">{profile.business_type || 'Not specified'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">GST Number</label>
@@ -250,6 +252,69 @@ export function ProfileView() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Skills, Languages, and Software */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Languages className="h-4 w-4" />
+              Languages
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profile.has_langauges && profile.has_langauges.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.has_langauges.map((lang) => (
+                  <Badge key={lang.id} variant="outline">{lang.title}</Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No languages added</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Award className="h-4 w-4" />
+              Skills
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profile.has_skills && profile.has_skills.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.has_skills.map((skill) => (
+                  <Badge key={skill.id} variant="outline">{skill.title}</Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No skills added</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Monitor className="h-4 w-4" />
+              Software
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {profile.has_softwares && profile.has_softwares.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.has_softwares.map((software) => (
+                  <Badge key={software.id} variant="outline">{software.title}</Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No software added</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Account Information */}
       <Card>
@@ -282,17 +347,17 @@ export function ProfileView() {
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div 
                       className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${profile.completed ? 100 : 75}%` }}
+                      style={{ width: `${profile.completed === 1 ? 100 : 75}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-gray-600">{profile.completed ? '100%' : '75%'}</span>
+                  <span className="text-sm text-gray-600">{profile.completed === 1 ? '100%' : '75%'}</span>
                 </div>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Account Status</label>
                 <div className="flex items-center gap-2">
                   {getStatusBadge(profile.status)}
-                  {profile.isVerified && (
+                  {profile.status === 1 && (
                     <span className="text-sm text-gray-600">• Verified Professional</span>
                   )}
                 </div>

@@ -91,16 +91,7 @@ export interface ApiResponse<T = any> {
 }
 
 export const POSITIONS = [
-  'Pharmacist',
-  'Pharmacy Technician',
-  'Pharmacy Assistant',
-  'Clinical Pharmacist',
-  'Hospital Pharmacist',
-  'Community Pharmacist',
-  'Consultant Pharmacist',
-  'Pharmacy Manager',
-  'Pharmacy Owner',
-  'Other'
+  'pharmacian',
 ] as const
 
 export const PROVINCES = [

@@ -1,8 +1,34 @@
 import { useState, useEffect } from 'react'
-import { HealthcareProfessional, ProfileFormData, FormErrors, ApiResponse } from '@/types/profile'
+import { useRouter } from 'next/navigation'
+import { fetchProfile, updateProfile, ProfileData, UpdateProfileRequest } from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
+
+interface ProfileFormData {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  password?: string
+  passwordConfirmation?: string
+  address: string
+  postcode: string
+  position: string
+  licence: string
+  province: string
+  gst?: string
+  businessName?: string
+  businessType?: string
+  experience?: number
+}
+
+interface FormErrors {
+  [key: string]: string | undefined
+}
 
 export function useProfileForm() {
-  const [profile, setProfile] = useState<HealthcareProfessional | null>(null)
+  const router = useRouter()
+  const { toast } = useToast()
+  const [profile, setProfile] = useState<ProfileData | null>(null)
   const [formData, setFormData] = useState<ProfileFormData | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -13,66 +39,50 @@ export function useProfileForm() {
 
   // Initialize form data
   useEffect(() => {
-    const fetchProfile = async () => {
+    const loadProfile = async () => {
       try {
         setIsLoading(true)
         console.log('🔄 Fetching profile data for form...')
         
-        const response = await fetch('/api/user/profile')
-        const data: ApiResponse<HealthcareProfessional> = await response.json()
+        const response = await fetchProfile()
+        console.log('📊 Profile API Response:', response)
 
-        console.log('📊 Profile API Response:', data)
-
-        if (!response.ok) {
-          console.error('❌ Profile API Error:', response.status, data.error)
-          throw new Error(data.error || 'Failed to fetch profile')
-        }
-
-        if (data.success && data.data) {
-          console.log('✅ Profile data loaded for form:', data.data.firstName, data.data.lastName)
-          setProfile(data.data)
+        if (response.data) {
+          console.log('✅ Profile data loaded for form:', response.data.first_name, response.data.last_name)
+          setProfile(response.data)
           setFormData({
-            firstName: data.data.firstName,
-            lastName: data.data.lastName,
-            email: data.data.email,
-            phone: data.data.phone,
-            address: data.data.address,
-            postcode: data.data.postcode,
-            position: data.data.position,
-            licence: data.data.licence,
-            province: data.data.province,
-            gst: data.data.gst || '',
-            businessName: data.data.businessName || '',
-            businessType: data.data.businessType || '',
-            experience: data.data.experience || undefined
+            firstName: response.data.first_name,
+            lastName: response.data.last_name,
+            email: response.data.email,
+            phone: response.data.phone,
+            address: response.data.address,
+            postcode: response.data.postcode,
+            position: response.data.position,
+            licence: response.data.licence,
+            province: response.data.province,
+            gst: response.data.gst || '',
+            businessName: response.data.business_name || '',
+            businessType: response.data.business_type || '',
+            experience: undefined
           })
         } else {
           console.error('❌ No profile data available')
-          // Set empty form data when no profile exists
-          setFormData({
-            firstName: '',
-            lastName: '',
-            email: '',
-            phone: '',
-            address: '',
-            postcode: '',
-            position: '',
-            licence: '',
-            province: '',
-            gst: '',
-            businessName: '',
-            businessType: '',
-            experience: undefined
-          })
+          throw new Error('No profile data returned')
         }
       } catch (err) {
         console.error('💥 Error fetching profile for form:', err)
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load profile'
+        
+        // If authentication error, redirect to login
+        if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
+          router.push('/login')
+        }
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchProfile()
+    loadProfile()
   }, [])
 
   const validateForm = (): boolean => {
@@ -195,21 +205,33 @@ export function useProfileForm() {
         body: formData
       })
 
-      const data: ApiResponse = await response.json()
+      const data = await response.json()
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to upload image')
       }
 
       // Update local profile image
-      if (profile && data.data?.profileImage) {
+      if (profile && data.data?.image) {
         setProfile(prev => prev ? {
           ...prev,
-          profileImage: data.data.profileImage
+          image: data.data.image
         } : null)
+        
+        toast({
+          title: 'Success',
+          description: 'Profile picture updated successfully',
+        })
       }
     } catch (err) {
       console.error('Error uploading image:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image'
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
     } finally {
       setIsUploading(false)
     }
@@ -229,28 +251,52 @@ export function useProfileForm() {
     setIsSaving(true)
 
     try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      })
-
-      const data: ApiResponse<HealthcareProfessional> = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update profile')
+      // Prepare update data matching API requirements
+      const updateData: UpdateProfileRequest = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        postcode: formData.postcode,
+        position: formData.position,
+        licence: formData.licence,
+        province: formData.province
       }
 
-      if (data.success && data.data) {
-        setProfile(data.data)
+      // Add password fields only if they're provided
+      if (formData.password && formData.password.trim() !== '') {
+        updateData.password = formData.password
+        updateData.password_confirmation = formData.passwordConfirmation || formData.password
+      }
+
+      const response = await updateProfile(updateData)
+
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: response.message || 'Profile updated successfully',
+        })
+        
+        // Refresh the page to re-fetch profile data
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000)
+        
         return true
       }
 
       return false
     } catch (err) {
       console.error('Error updating profile:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile'
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+      
       return false
     } finally {
       setIsSaving(false)

@@ -9,6 +9,7 @@ import { PhoneInput } from './PhoneInput'
 import { OTPInput } from './OTPInput'
 import { ArrowLeft, Shield, CheckCircle2, UserPlus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { sendOTP, loginWithOTP } from '@/lib/api'
 
 type LoginStep = 'phone' | 'otp'
 
@@ -51,27 +52,25 @@ export function LoginPage() {
     if (!validatePhone()) return
 
     setIsLoading(true)
+    setPhoneError('')
+    
     try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `${countryCode}${phone}` })
+      await sendOTP(phone)
+      
+      setStep('otp')
+      setResendTimer(60)
+      toast({
+        title: 'OTP Sent!',
+        description: `Verification code sent to ${phone}`,
       })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setStep('otp')
-        setResendTimer(60)
-        toast({
-          title: 'OTP Sent!',
-          description: `Verification code sent to ${countryCode}${phone}`,
-        })
-      } else {
-        setPhoneError(data.error || 'Failed to send OTP')
-      }
     } catch (error) {
-      setPhoneError('Network error. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send OTP'
+      setPhoneError(errorMessage)
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
     } finally {
       setIsLoading(false)
     }
@@ -89,36 +88,45 @@ export function LoginPage() {
     setOtpError('')
 
     try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: `${countryCode}${phone}`,
-          otp: otpCode
-        })
+      const response = await loginWithOTP(phone, otpCode)
+
+      // Store authentication data
+      if (response.access_token) {
+        localStorage.setItem('auth_token', response.access_token)
+        localStorage.setItem('token_type', response.token_type || 'bearer')
+        localStorage.setItem('token_expires_in', response.expires_in?.toString() || '')
+        localStorage.setItem('phone_verified', response.phone_verified?.toString() || 'false')
+        localStorage.setItem('completed', response.completed?.toString() || 'false')
+        localStorage.setItem('user_status', response.status?.toString() || '')
+      }
+
+      toast({
+        title: 'Login Successful!',
+        description: 'Welcome back to Alfa Relief',
       })
 
-      const data = await response.json()
-
-      if (data.success) {
-        // Store token
-        if (data.token) {
-          localStorage.setItem('auth_token', data.token)
-        }
-
-        toast({
-          title: 'Verification Successful!',
-          description: 'Welcome to Alfa Relief',
-        })
-
-        // Redirect to shifts page
-        router.push('/')
+      // Redirect based on status
+      const status = typeof response.status === 'number' ? response.status : parseInt(response.status || '0')
+      
+      if (status === 1) {
+        // Active account - redirect to home
+        router.push('/shifts')
+      } else if (status === 0) {
+        // Account under review
+        router.push('/account-review')
       } else {
-        setOtpError(data.error || 'Invalid OTP. Please try again.')
-        setOtp(['', '', '', ''])
+        // Unknown status - redirect to home
+        router.push('/shifts')
       }
     } catch (error) {
-      setOtpError('Network error. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Invalid OTP. Please try again.'
+      setOtpError(errorMessage)
+      setOtp(['', '', '', ''])
+      toast({
+        title: 'Verification Failed',
+        description: errorMessage,
+        variant: 'destructive'
+      })
     } finally {
       setIsLoading(false)
     }
@@ -128,24 +136,17 @@ export function LoginPage() {
     if (resendTimer > 0) return
     
     setIsLoading(true)
+    setOtpError('')
+    
     try {
-      const response = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: `${countryCode}${phone}` })
+      await sendOTP(phone)
+      
+      setResendTimer(60)
+      setOtp(['', '', '', ''])
+      toast({
+        title: 'OTP Resent!',
+        description: 'A new code has been sent to your phone',
       })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setResendTimer(60)
-        setOtp(['', '', '', ''])
-        setOtpError('')
-        toast({
-          title: 'OTP Resent!',
-          description: 'A new code has been sent to your phone',
-        })
-      }
     } catch (error) {
       toast({
         title: 'Error',

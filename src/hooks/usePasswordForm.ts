@@ -1,7 +1,21 @@
 import { useState, useEffect } from 'react'
-import { PasswordFormData, FormErrors, ApiResponse } from '@/types/profile'
+import { useRouter } from 'next/navigation'
+import { changePassword, ChangePasswordRequest } from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
+
+interface PasswordFormData {
+  oldPassword: string
+  password: string
+  passwordConfirmation: string
+}
+
+interface FormErrors {
+  [key: string]: string | undefined
+}
 
 export function usePasswordForm() {
+  const router = useRouter()
+  const { toast } = useToast()
   const [formData, setFormData] = useState<PasswordFormData>({
     oldPassword: '',
     password: '',
@@ -104,37 +118,50 @@ export function usePasswordForm() {
     setIsSaving(true)
 
     try {
-      const response = await fetch('/api/user/password', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          oldPassword: formData.oldPassword,
-          password: formData.password
-        })
-      })
-
-      const data: ApiResponse = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update password')
+      // Prepare change password data matching API requirements
+      const passwordData: ChangePasswordRequest = {
+        old_password: formData.oldPassword,
+        password: formData.password,
+        password_confirmation: formData.passwordConfirmation
       }
 
-      // Reset form on success
-      setFormData({
-        oldPassword: '',
-        password: '',
-        passwordConfirmation: ''
-      })
+      const response = await changePassword(passwordData)
 
-      return true
+      if (response.success) {
+        toast({
+          title: 'Success',
+          description: response.message || 'Password updated successfully',
+        })
+
+        // Reset form on success
+        setFormData({
+          oldPassword: '',
+          password: '',
+          passwordConfirmation: ''
+        })
+
+        // Optional: Keep user logged in (based on product decision)
+        // If you want to force re-login, uncomment the following lines:
+        // clearAuth()
+        // router.push('/login')
+
+        return true
+      }
+
+      return false
     } catch (err) {
       console.error('Error updating password:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update password'
       
       // Set error message
       setErrors({
-        oldPassword: err instanceof Error ? err.message : 'Failed to update password'
+        oldPassword: errorMessage
+      })
+      
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
       })
       
       return false

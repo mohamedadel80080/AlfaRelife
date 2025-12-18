@@ -1,61 +1,53 @@
 import { useState, useEffect } from 'react'
-import { HealthcareProfessional, ApiResponse } from '@/types/profile'
+import { useRouter } from 'next/navigation'
+import { fetchProfile, ProfileData } from '@/lib/api'
 
 export function useProfile() {
-  const [profile, setProfile] = useState<HealthcareProfessional | null>(null)
+  const router = useRouter()
+  const [profile, setProfile] = useState<ProfileData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchProfile = async () => {
+  const loadProfile = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
       console.log('🔄 Fetching profile from API...')
       
-      const response = await fetch('/api/user/profile', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await fetchProfile()
+      console.log('📊 API Response Data:', response)
 
-      console.log('📡 Response status:', response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ API Error Response:', errorText)
-        throw new Error(`API Error: ${response.status} - ${errorText}`)
-      }
-
-      const data: ApiResponse<HealthcareProfessional> = await response.json()
-      console.log('📊 API Response Data:', data)
-
-      if (data.success && data.data) {
-        console.log('✅ Profile loaded successfully:', data.data.firstName, data.data.lastName)
-        setProfile(data.data)
+      if (response.data) {
+        console.log('✅ Profile loaded successfully:', response.data.first_name, response.data.last_name)
+        setProfile(response.data)
         setError(null)
       } else {
-        console.error('❌ API returned error:', data.error)
-        throw new Error(data.error || 'Failed to fetch profile')
+        console.error('❌ API returned no data')
+        throw new Error('No profile data returned')
       }
     } catch (err) {
-      console.error('💥 Error in fetchProfile:', err)
+      console.error('💥 Error in loadProfile:', err)
       const errorMessage = err instanceof Error ? err.message : 'An error occurred while fetching your profile'
       setError(errorMessage)
       setProfile(null)
+      
+      // If authentication error, redirect to login
+      if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
+        router.push('/login')
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchProfile()
+    loadProfile()
   }, [])
 
   const refetch = () => {
     console.log('🔄 Manual refetch triggered')
-    fetchProfile()
+    loadProfile()
   }
 
   const clearError = () => {

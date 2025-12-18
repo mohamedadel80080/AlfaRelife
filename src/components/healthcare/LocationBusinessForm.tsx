@@ -1,19 +1,20 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, MapPin, Building, Camera, FileText, User } from 'lucide-react'
+import { Upload, MapPin, Building, Camera, FileText, User, Loader2 } from 'lucide-react'
+import { fetchDistricts, type District } from '@/lib/api'
 
 interface LocationBusinessFormProps {
   data: {
     address: string
     city: string
-    districtId: string
+    districtId: string | number
     postcode: string
     position: string
     licence: string
@@ -25,7 +26,7 @@ interface LocationBusinessFormProps {
     businessName: string
     gst: string
   }
-  onNext: (data: any) => void
+  onNext: (data: any) => Promise<void> | void
   onBack: () => void
 }
 
@@ -44,14 +45,7 @@ interface FormErrors {
 }
 
 const POSITIONS = [
-  'Pharmacist',
-  'Pharmacy Technician',
-  'Pharmacy Assistant',
-  'Clinical Pharmacist',
-  'Hospital Pharmacist',
-  'Community Pharmacist',
-  'Consultant Pharmacist',
-  'Other'
+  'pharmacian'
 ]
 
 const PROVINCES = [
@@ -85,6 +79,8 @@ const DISTRICTS = [
 ]
 
 export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessFormProps) {
+  const [districts, setDistricts] = useState<District[]>([])
+  const [loadingDistricts, setLoadingDistricts] = useState(true)
   const [formData, setFormData] = useState({
     address: data.address,
     city: data.city,
@@ -107,14 +103,32 @@ export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessF
   const licenceImageRef = useRef<HTMLInputElement>(null)
   const profileImageRef = useRef<HTMLInputElement>(null)
 
+  // Fetch districts on component mount
+  useEffect(() => {
+    const loadDistricts = async () => {
+      try {
+        setLoadingDistricts(true)
+        const response = await fetchDistricts()
+        setDistricts(response.data)
+      } catch (error) {
+        console.error('Error fetching districts:', error)
+        setErrors(prev => ({ ...prev, districtId: 'Failed to load districts' }))
+      } finally {
+        setLoadingDistricts(false)
+      }
+    }
+
+    loadDistricts()
+  }, [])
+
   const validatePostalCode = (postalCode: string) => {
     const canadianPostalCode = /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/
     return canadianPostalCode.test(postalCode.replace(/\s/g, ''))
   }
 
   const validateGST = (gst: string) => {
-    const gstRegex = /^\d{9}$/
-    return gstRegex.test(gst.replace(/\s/g, ''))
+    // GST should be "yes" or "no"
+    return gst === 'yes' || gst === 'no'
   }
 
   const validateForm = () => {
@@ -163,9 +177,9 @@ export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessF
     }
 
     if (!formData.gst.trim()) {
-      newErrors.gst = 'GST number is required'
+      newErrors.gst = 'GST selection is required'
     } else if (!validateGST(formData.gst)) {
-      newErrors.gst = 'Please enter a valid 9-digit GST number'
+      newErrors.gst = 'Please select yes or no for GST'
     }
 
     setErrors(newErrors)
@@ -230,10 +244,7 @@ export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessF
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      onNext(formData)
+      await onNext(formData)
     } catch (error) {
       console.error('Registration error:', error)
     } finally {
@@ -325,18 +336,27 @@ export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessF
 
             <div className="space-y-2">
               <Label htmlFor="districtId">District *</Label>
-              <Select value={formData.districtId} onValueChange={(value) => handleInputChange('districtId', value)}>
-                <SelectTrigger className={errors.districtId ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select district" />
-                </SelectTrigger>
-                <SelectContent>
-                  {DISTRICTS.map((district) => (
-                    <SelectItem key={district} value={district}>
-                      {district}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {loadingDistricts ? (
+                <div className="flex items-center justify-center h-10 border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                </div>
+              ) : (
+                <Select 
+                  value={formData.districtId?.toString()} 
+                  onValueChange={(value) => handleInputChange('districtId', value)}
+                >
+                  <SelectTrigger className={errors.districtId ? 'border-red-500' : ''}>
+                    <SelectValue placeholder="Select district" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.id.toString()}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {errors.districtId && (
                 <p className="text-sm text-red-500">{errors.districtId}</p>
               )}
@@ -490,17 +510,16 @@ export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessF
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="gst">GST Number *</Label>
-            <Input
-              id="gst"
-              type="text"
-              value={formData.gst}
-              onChange={(e) => handleInputChange('gst', e.target.value.replace(/\D/g, ''))}
-              placeholder="123456789"
-              className={errors.gst ? 'border-red-500' : ''}
-              disabled={isLoading}
-              maxLength={9}
-            />
+            <Label htmlFor="gst">Do you have a GST Number? *</Label>
+            <Select value={formData.gst} onValueChange={(value) => handleInputChange('gst', value)}>
+              <SelectTrigger className={errors.gst ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select yes or no" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes">Yes</SelectItem>
+                <SelectItem value="no">No</SelectItem>
+              </SelectContent>
+            </Select>
             {errors.gst && (
               <p className="text-sm text-red-500">{errors.gst}</p>
             )}
@@ -523,7 +542,14 @@ export function LocationBusinessForm({ data, onNext, onBack }: LocationBusinessF
           className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2"
           disabled={isLoading}
         >
-          {isLoading ? 'Processing...' : 'Continue to Questions'}
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Creating Account...
+            </>
+          ) : (
+            'Create Account & Continue'
+          )}
         </Button>
       </div>
     </form>

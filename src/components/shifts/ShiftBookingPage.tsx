@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,10 +20,12 @@ import {
   Eye,
   Activity,
   UserCircle,
-  LogIn
+  LogIn,
+  LogOut
 } from 'lucide-react'
 import { FilterBar } from './FilterBar'
 import { format } from 'date-fns'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Shift {
   id: number
@@ -58,6 +61,8 @@ interface ShiftsResponse {
 }
 
 export function ShiftBookingPage() {
+  const router = useRouter()
+  const { isAuth, logout } = useAuth()
   const [shifts, setShifts] = useState<Shift[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -248,43 +253,60 @@ export function ShiftBookingPage() {
 
               {/* Navigation Tabs - Segmented Control */}
               <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
-                <Link href="/login">
-                  <Button 
-                    variant="ghost" 
-                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
-                  >
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Login
-                  </Button>
-                </Link>
-               
-                <Link href="/register">
-                  <Button 
-                    variant="ghost" 
-                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
-                  >
-                    <UserCircle className="h-4 w-4 mr-2" />
-                    Register
-                  </Button>
-                </Link>
-                 <Link href="/my-shifts">
-                  <Button 
-                    variant="ghost" 
-                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
-                  >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    My Shifts
-                  </Button>
-                </Link>
-                <Link href="/profile">
-                  <Button 
-                    variant="ghost" 
-                    className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </Button>
-                </Link>
+                {!isAuth ? (
+                  // Show Login and Register when not authenticated
+                  <>
+                    <Link href="/login">
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                      >
+                        <LogIn className="h-4 w-4 mr-2" />
+                        Login
+                      </Button>
+                    </Link>
+                   
+                    <Link href="/register">
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                      >
+                        <UserCircle className="h-4 w-4 mr-2" />
+                        Register
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  // Show My Shifts, Profile, and Logout when authenticated
+                  <>
+                    <Link href="/my-shifts">
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                      >
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        My Shifts
+                      </Button>
+                    </Link>
+                    <Link href="/profile">
+                      <Button 
+                        variant="ghost" 
+                        className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Profile
+                      </Button>
+                    </Link>
+                    <Button 
+                      onClick={logout}
+                      variant="ghost" 
+                      className="rounded-lg hover:bg-white hover:shadow-sm transition-all duration-200 text-red-600 hover:text-red-700"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
