@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { PhoneInput } from './PhoneInput'
 import { OTPInput } from './OTPInput'
-import { ArrowLeft, Shield, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Shield, CheckCircle2, UserPlus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 type LoginStep = 'phone' | 'otp'
@@ -281,13 +282,29 @@ export function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6">
+        <div className="text-center mt-6 space-y-4">
           <p className="text-sm text-gray-500">
             By continuing, you agree to our{' '}
             <a href="#" className="text-teal-700 hover:underline">Terms of Service</a>
             {' '}and{' '}
             <a href="#" className="text-teal-700 hover:underline">Privacy Policy</a>
           </p>
+          
+          {/* Register Link */}
+          <div className="pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600 mb-3">
+              Don't have an account?
+            </p>
+            <Link href="/register">
+              <Button
+                variant="outline"
+                className="w-full h-11 border-2 border-teal-700 text-teal-700 hover:bg-teal-50 rounded-xl font-semibold transition-all duration-200"
+              >
+                <UserPlus className="h-4 w-4 mr-2" />
+                Create New Account
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

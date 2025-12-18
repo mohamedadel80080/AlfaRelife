@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { PersonalDataForm } from './PersonalDataForm'
 import { LocationBusinessForm } from './LocationBusinessForm'
 import { QuestionsForm } from './QuestionsForm'
 import { LoginForm } from './LoginForm'
 import { HomeScreen } from './HomeScreen'
 import { Progress } from '@/components/ui/progress'
-import { Shield, Building } from 'lucide-react'
+import { Shield, Building, LogIn } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 type RegistrationStep = 'personal' | 'location' | 'questions' | 'login' | 'home'
@@ -85,16 +86,30 @@ export function HealthcareRegistration() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 md:p-8">
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 md:p-12">
       {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-semibold text-gray-800">{getStepTitle()}</h2>
-          <span className="text-sm text-gray-500">
-            {currentStep !== 'home' && `${getProgress()}% Complete`}
-          </span>
+      <div className="mb-10">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-1">
+              Step {getProgress() / 25} of 4
+            </p>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900">{getStepTitle()}</h2>
+          </div>
+          {currentStep !== 'home' && (
+            <span className="text-sm font-semibold text-teal-700">
+              {getProgress()}% Complete
+            </span>
+          )}
         </div>
-        <Progress value={getProgress()} className="h-2" />
+        <div className="relative">
+          <div className="overflow-hidden h-2 bg-gray-200 rounded-full">
+            <div
+              className="h-full bg-gradient-to-r from-teal-600 to-teal-700 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${getProgress()}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Form Content */}
@@ -135,8 +150,8 @@ export function HealthcareRegistration() {
 
       {currentStep === 'home' && (
         <div className="text-center py-12">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
-            <Shield className="h-8 w-8 text-green-600" />
+          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-teal-100 mb-6">
+            <Shield className="h-8 w-8 text-teal-700" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Registration Complete!</h2>
           <p className="text-gray-600 mb-8">
@@ -145,11 +160,29 @@ export function HealthcareRegistration() {
           </p>
           <Button 
             onClick={() => router.push('/shifts')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3"
+            className="bg-gradient-to-r from-teal-700 to-teal-800 hover:from-teal-800 hover:to-teal-900 text-white px-8 py-3 rounded-xl shadow-lg shadow-teal-200"
           >
             <Building className="h-5 w-5 mr-2" />
             View Available Shifts
           </Button>
+        </div>
+      )}
+
+      {/* Login Link - Show only on first step */}
+      {currentStep === 'personal' && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <p className="text-sm text-gray-600 text-center mb-3">
+            Already have an account?
+          </p>
+          <Link href="/login">
+            <Button
+              variant="outline"
+              className="w-full h-11 border-2 border-teal-700 text-teal-700 hover:bg-teal-50 rounded-xl font-semibold transition-all duration-200"
+            >
+              <LogIn className="h-4 w-4 mr-2" />
+              Sign In to Your Account
+            </Button>
+          </Link>
         </div>
       )}
     </div>

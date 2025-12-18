@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -29,7 +29,6 @@ export const metadata: Metadata = {
     ],
   },
   manifest: "/manifest.json",
-  themeColor: "#004248",
   openGraph: {
     title: "Healthcare Staffing Platform",
     description: "Professional pharmacy shift management",
@@ -45,6 +44,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "HealthStaff",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#004248",
 };
 
 export default function RootLayout({
