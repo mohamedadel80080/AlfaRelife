@@ -21,80 +21,120 @@ import {
   Activity,
   UserCircle,
   LogIn,
-  LogOut
+  LogOut,
+  ChevronRight
 } from 'lucide-react'
 import { FilterBar } from './FilterBar'
 import { format } from 'date-fns'
 import { useAuth } from '@/hooks/useAuth'
+import { fetchHomeShifts, HomeFilters, ShiftItem, fetchUpcomingShifts, UpcomingShift } from '@/lib/api'
+import { UpcomingShiftCard } from './UpcomingShiftCard'
 
-interface Shift {
-  id: number
-  date: string
-  from: string
-  to: string
-  hours: number
-  address: string
-  pharmacy_id: number
-  pharmacy_name: string
-  pharmacy_phone: string
-  pharmacy_city: string
-  pharmacy_province: string
-  pharmacy_postcode: string
-  hour_rate: number
-  total: number
-  applied: boolean
-  applied_at: string | null
-  applied_msg: string | null
-  addres: {
-    id: number
-    title: string
-    phone: string
-    city: string
-    postcode: string
-  }
-}
-
-interface ShiftsResponse {
-  success: boolean
-  data: Shift[]
-  error?: string
+interface Shift extends ShiftItem {
+  pharmacy_name?: string
+  pharmacy_phone?: string
+  pharmacy_city?: string
+  pharmacy_province?: string
+  pharmacy_postcode?: string
 }
 
 export function ShiftBookingPage() {
   const router = useRouter()
   const { isAuth, logout } = useAuth()
   const [shifts, setShifts] = useState<Shift[]>([])
+  const [upcomingShifts, setUpcomingShifts] = useState<UpcomingShift[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isUpcomingLoading, setIsUpcomingLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [upcomingError, setUpcomingError] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined)
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined)
+  const [priceFilter, setPriceFilter] = useState<'high' | 'low' | undefined>(undefined)
   const [isApplying, setIsApplying] = useState<number | null>(null)
   const [applicationMessage, setApplicationMessage] = useState<string>('')
 
   useEffect(() => {
     fetchShifts()
-  }, [])
+    if (isAuth) {
+      fetchUpcomingShiftsData()
+    }
+  }, [itemsPerPage, dateFrom, priceFilter, isAuth])
+
+  const fetchUpcomingShiftsData = async () => {
+    try {
+      setIsUpcomingLoading(true)
+      setUpcomingError(null)
+
+      const response = await fetchUpcomingShifts()
+
+      if (response.status && response.data) {
+        setUpcomingShifts(response.data)
+      }
+    } catch (err) {
+      console.error('Error fetching upcoming shifts:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load upcoming shifts'
+      setUpcomingError(errorMessage)
+      
+      // If authentication error, don't call API
+      if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
+        setUpcomingShifts([])
+      }
+    } finally {
+      setIsUpcomingLoading(false)
+    }
+  }
 
   const fetchShifts = async () => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch('/api/shifts')
-      const data: ShiftsResponse = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch shifts')
+      // Build filters
+      const filters: HomeFilters = {
+        paginate: itemsPerPage
       }
 
-      if (data.success && data.data) {
-        setShifts(data.data)
+      if (priceFilter) {
+        filters.price = priceFilter
+      }
+
+      if (dateFrom) {
+        // Format date as DD-MM-YYYY
+        const day = dateFrom.getDate().toString().padStart(2, '0')
+        const month = (dateFrom.getMonth() + 1).toString().padStart(2, '0')
+        const year = dateFrom.getFullYear()
+        filters.date = `${day}-${month}-${year}`
+      }
+
+      if (dateTo) {
+        // Format date as DD-MM-YYYY
+        const day = dateTo.getDate().toString().padStart(2, '0')
+        const month = (dateTo.getMonth() + 1).toString().padStart(2, '0')
+        const year = dateTo.getFullYear()
+        filters.from = `${day}-${month}-${year}`
+      }
+
+      const response = await fetchHomeShifts(filters)
+
+      if (response.status && response.data) {
+        // Flatten the grouped data into a single array
+        const allShifts: Shift[] = []
+        Object.values(response.data).forEach(dateShifts => {
+          allShifts.push(...dateShifts)
+        })
+        setShifts(allShifts)
       }
     } catch (err) {
       console.error('Error fetching shifts:', err)
-      setError('Failed to load shifts')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load shifts'
+      setError(errorMessage)
+      
+      // If authentication error, don't call API
+      if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
+        setShifts([])
+      }
     } finally {
       setIsLoading(false)
     }
@@ -326,6 +366,64 @@ export function ShiftBookingPage() {
             onDateChange={handleDateChange}
             onClearFilters={handleClearFilters}
           />
+
+          {/* Upcoming Shifts Section - Only shown when authenticated */}
+          {isAuth && (
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">Your Upcoming Shifts</h3>
+                <Button 
+                  variant="ghost" 
+                  onClick={fetchUpcomingShiftsData}
+                  disabled={isUpcomingLoading}
+                  className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                >
+                  {isUpcomingLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </div>
+              
+              {isUpcomingLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-700 mr-2"></div>
+                  <span className="text-gray-600">Loading upcoming shifts...</span>
+                </div>
+              ) : upcomingError ? (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Upcoming Shifts</h3>
+                  <p className="text-gray-600 mb-4">{upcomingError}</p>
+                  <Button 
+                    onClick={fetchUpcomingShiftsData} 
+                    className="bg-teal-700 hover:bg-teal-800 text-white"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : upcomingShifts.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Upcoming Shifts</h3>
+                  <p className="text-gray-600">You don't have any upcoming shifts scheduled at the moment.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {upcomingShifts.slice(0, 3).map((shift) => (
+                    <UpcomingShiftCard key={shift.id} shift={shift} />
+                  ))}
+                  {upcomingShifts.length > 3 && (
+                    <div className="flex items-center justify-center">
+                      <Link href="/my-shifts">
+                        <Button variant="outline" className="flex items-center gap-2">
+                          View All {upcomingShifts.length} Upcoming Shifts
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Status Summary */}
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">

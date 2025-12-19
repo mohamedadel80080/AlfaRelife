@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ShiftCard } from './ShiftCard'
+import { AssignedShiftCard } from './AssignedShiftCard'
+import { fetchAssignedRequests, AssignedShift } from '@/lib/api'
 import { 
   Briefcase,
   Calendar,
@@ -26,11 +29,13 @@ interface Shift {
   total: number
   earning: number
   status: string
+  accepted?: boolean
 }
 
 type ShiftStatus = 'assigned' | 'upcoming' | 'cancel'
 
 export function MyShiftsPage() {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<ShiftStatus>('assigned')
   const [shifts, setShifts] = useState<Record<ShiftStatus, Shift[]>>({
     assigned: [],
@@ -62,25 +67,72 @@ export function MyShiftsPage() {
     setError(prev => ({ ...prev, [status]: null }))
 
     try {
-      const response = await fetch(`/api/shifts/my-shifts?status=${status}`)
-      const data = await response.json()
+      // Use new API for assigned shifts
+      if (status === 'assigned') {
+        const response = await fetchAssignedRequests()
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch shifts')
-      }
+        if (response.status && response.data) {
+          // Transform API data to match Shift interface
+          const transformedShifts: Shift[] = response.data.map((shift: AssignedShift) => ({
+            id: shift.id,
+            date: shift.date,
+            from: shift.from,
+            to: shift.to,
+            hours: shift.hours,
+            pharmacy_name: shift.pharmacy?.title || shift.addres?.title || 'N/A',
+            pharmacy_address: shift.address || shift.addres?.address || 'N/A',
+            city: shift.pharmacy?.city || shift.addres?.city || 'N/A',
+            district: 'N/A', // District info not in assigned API response
+            total: shift.total,
+            earning: shift.total, // Using total as earning
+            status: 'assigned',
+            accepted: shift.applied || false // Track acceptance status
+          }))
 
-      if (data.success) {
-        setShifts(prev => ({
-          ...prev,
-          [status]: data.data || []
-        }))
+          setShifts(prev => ({
+            ...prev,
+            [status]: transformedShifts
+          }))
+        } else {
+          // Empty response - no assigned shifts
+          setShifts(prev => ({
+            ...prev,
+            [status]: []
+          }))
+        }
+      } else {
+        // Use existing mock API for upcoming and cancel tabs
+        const response = await fetch(`/api/shifts/my-shifts?status=${status}`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch shifts')
+        }
+
+        if (data.success) {
+          setShifts(prev => ({
+            ...prev,
+            [status]: data.data || []
+          }))
+        }
       }
     } catch (err) {
       console.error(`Error fetching ${status} shifts:`, err)
-      setError(prev => ({
-        ...prev,
-        [status]: `Failed to load ${status} shifts`
-      }))
+      const errorMessage = err instanceof Error ? err.message : `Failed to load ${status} shifts`
+      
+      // Check if it's an authentication error
+      if (errorMessage.includes('authentication') || errorMessage.includes('login')) {
+        // Redirect to login handled by apiRequest in api.ts
+        setError(prev => ({
+          ...prev,
+          [status]: 'Please login to view your shifts'
+        }))
+      } else {
+        setError(prev => ({
+          ...prev,
+          [status]: errorMessage
+        }))
+      }
     } finally {
       setIsLoading(prev => ({ ...prev, [status]: false }))
     }
@@ -163,7 +215,16 @@ export function MyShiftsPage() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {shifts[status].map((shift) => (
-          <ShiftCard key={shift.id} shift={shift} />
+          status === 'assigned' ? (
+            <AssignedShiftCard 
+              key={shift.id} 
+              shift={shift}
+              onAcceptSuccess={() => fetchShifts('assigned')}
+              onCancelSuccess={() => fetchShifts('assigned')}
+            />
+          ) : (
+            <ShiftCard key={shift.id} shift={shift} />
+          )
         ))}
       </div>
     )

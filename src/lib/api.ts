@@ -533,3 +533,351 @@ export async function changePassword(data: ChangePasswordRequest): Promise<Chang
     body: JSON.stringify(data)
   })
 }
+
+/**
+ * Home/Shifts API interfaces and functions
+ */
+export interface HomeFilters {
+  paginate?: number
+  price?: 'high' | 'low'
+  date?: string  // Format: DD-MM-YYYY
+  from?: string  // Format: DD-MM-YYYY
+}
+
+export interface ShiftItem {
+  id: number
+  date: string
+  from: string
+  to: string
+  hours: number
+  address: string
+  lat: string
+  lng: string
+  pharmacy_id: number
+  status: number
+  hour_rate: number
+  total: number
+  created_at: string
+  address_id: number
+  applied_at: string | null
+  applied: boolean
+  applied_msg: string | null
+  addres: {
+    id: number
+    title: string
+    phone: string
+    lat: string
+    lng: string
+    address: string
+    city: string
+    postcode: string
+    district_id: number
+    pharmacy_id: number
+    created_at: string
+    updated_at: string
+  }
+}
+
+export interface HomeResponse {
+  status: boolean
+  data: Record<string, ShiftItem[]>  // Grouped by date
+}
+
+/**
+ * Fetch home shifts with filters
+ */
+export async function fetchHomeShifts(filters?: HomeFilters): Promise<HomeResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  // Build query string from filters
+  const params = new URLSearchParams()
+  if (filters) {
+    if (filters.paginate) params.append('paginate', filters.paginate.toString())
+    if (filters.price) params.append('price', filters.price)
+    if (filters.date) params.append('date', filters.date)
+    if (filters.from) params.append('from', filters.from)
+  }
+
+  const queryString = params.toString()
+  const endpoint = queryString ? `/home?${queryString}` : '/home'
+
+  return apiRequest<HomeResponse>(endpoint, {
+    method: 'GET'
+  })
+}
+
+/**
+ * Pharmacy Offer API interfaces and functions
+ */
+export interface AcceptPharmacyOfferRequest {
+  order_id: number
+}
+
+export interface SendPharmacistOfferRequest {
+  order_id: number
+  mileage?: number
+  house?: number
+  hour_rate?: number
+  comment?: string
+}
+
+export interface OfferResponse {
+  success: boolean
+  message: string
+  data?: any
+}
+
+/**
+ * Accept pharmacy offer (direct acceptance without changes)
+ */
+export async function acceptPharmacyOffer(orderId: number): Promise<OfferResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  const payload: AcceptPharmacyOfferRequest = {
+    order_id: orderId
+  }
+
+  return apiRequest<OfferResponse>('/requests/offer', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}
+
+/**
+ * Send pharmacist custom offer
+ * Only sends fields that are provided (not undefined)
+ */
+export async function sendPharmacistOffer(
+  orderId: number,
+  offerData?: {
+    mileage?: number
+    house?: number
+    hour_rate?: number
+    comment?: string
+  }
+): Promise<OfferResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  // Build payload with only provided fields
+  const payload: SendPharmacistOfferRequest = {
+    order_id: orderId
+  }
+
+  // Only add fields if they are provided and not empty
+  if (offerData) {
+    if (offerData.mileage !== undefined && offerData.mileage !== null) {
+      payload.mileage = offerData.mileage
+    }
+    if (offerData.house !== undefined && offerData.house !== null) {
+      payload.house = offerData.house
+    }
+    if (offerData.hour_rate !== undefined && offerData.hour_rate !== null) {
+      payload.hour_rate = offerData.hour_rate
+    }
+    if (offerData.comment && offerData.comment.trim() !== '') {
+      payload.comment = offerData.comment
+    }
+  }
+
+  return apiRequest<OfferResponse>('/requests/offer', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}
+
+/**
+ * Assigned Requests API interfaces and functions
+ */
+export interface AssignedShift {
+  id: number
+  date: string
+  from: string
+  to: string
+  hours: number
+  address: string
+  lat: string
+  lng: string
+  pharmacy_id: number
+  status: number
+  hour_rate: number
+  total: number
+  created_at: string
+  address_id: number
+  applied_at: string | null
+  applied: boolean
+  applied_msg: string | null
+  pharmacy?: {
+    id: number
+    title: string
+    email: string
+    phone: string
+    address: string
+    city: string
+  }
+  addres?: {
+    id: number
+    title: string
+    phone: string
+    lat: string
+    lng: string
+    address: string
+    city: string
+    postcode: string
+    district_id: number
+    pharmacy_id: number
+  }
+}
+
+export interface AssignedRequestsResponse {
+  status: boolean
+  data: AssignedShift[]
+  message?: string
+}
+
+/**
+ * Fetch assigned shifts/requests for the logged-in user
+ */
+export async function fetchAssignedRequests(): Promise<AssignedRequestsResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  return apiRequest<AssignedRequestsResponse>('/requests/assigned', {
+    method: 'GET'
+  })
+}
+
+/**
+ * Accept Assigned Shift API interfaces and functions
+ */
+export interface AcceptShiftRequest {
+  order_id: number
+}
+
+export interface AcceptShiftResponse {
+  status: boolean
+  message: string
+  data?: any
+}
+
+/**
+ * Accept an assigned shift
+ */
+export async function acceptAssignedShift(orderId: number): Promise<AcceptShiftResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  const payload: AcceptShiftRequest = {
+    order_id: orderId
+  }
+
+  return apiRequest<AcceptShiftResponse>('/requests/accept', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}
+
+/**
+ * Cancel Accepted Shift API interfaces and functions
+ */
+export interface CancelShiftResponse {
+  status: boolean
+  message: string
+  data?: any
+}
+
+/**
+ * Cancel an accepted shift
+ */
+export async function cancelAcceptedShift(orderId: number): Promise<CancelShiftResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  return apiRequest<CancelShiftResponse>(`/requests/cancell/${orderId}`, {
+    method: 'GET'
+  })
+}
+
+/**
+ * Upcoming Shifts API interfaces and functions
+ */
+export interface UpcomingShift {
+  id: number
+  date: string
+  from: string
+  to: string
+  hours: number
+  address: string
+  lat: string
+  lng: string
+  pharmacy_id: number
+  status: number
+  hour_rate: number
+  total: number
+  created_at: string
+  address_id: number
+  applied_at: string | null
+  applied: boolean
+  applied_msg: string | null
+  pharmacy?: {
+    id: number
+    title: string
+    email: string
+    phone: string
+    address: string
+    city: string
+  }
+  addres?: {
+    id: number
+    title: string
+    phone: string
+    lat: string
+    lng: string
+    address: string
+    city: string
+    postcode: string
+    district_id: number
+    pharmacy_id: number
+  }
+}
+
+export interface UpcomingShiftsResponse {
+  status: boolean
+  data: UpcomingShift[]
+  message?: string
+}
+
+/**
+ * Fetch upcoming shifts for the logged-in user
+ */
+export async function fetchUpcomingShifts(): Promise<UpcomingShiftsResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  return apiRequest<UpcomingShiftsResponse>('/requests/upcoming', {
+    method: 'GET'
+  })
+}

@@ -24,6 +24,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
+import { acceptPharmacyOffer, sendPharmacistOffer } from '@/lib/api'
+import { ShiftLocationMap } from '@/components/maps/ShiftLocationMap'
 
 interface ShiftDetailsPageProps {
   shiftId: string
@@ -127,33 +129,24 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
 
     setIsAccepting(true)
     try {
-      const response = await fetch('/api/shifts/accept-pharmacy-offer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          order_id: shift.id
-        })
-      })
+      const response = await acceptPharmacyOffer(shift.id)
 
-      const data = await response.json()
-
-      if (data.success) {
+      if (response.success) {
         toast({
           title: 'Success!',
-          description: 'Pharmacy offer accepted successfully',
+          description: response.message || 'Pharmacy offer accepted successfully',
         })
         // Refresh shift details
         fetchShiftDetails()
       } else {
-        throw new Error(data.error || 'Failed to accept offer')
+        throw new Error(response.message || 'Failed to accept offer')
       }
     } catch (err) {
       console.error('Error accepting offer:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to accept pharmacy offer'
       toast({
         title: 'Error',
-        description: 'Failed to accept pharmacy offer',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -166,39 +159,47 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
 
     setIsSendingOffer(true)
     try {
-      const response = await fetch('/api/shifts/send-pharmacist-offer', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          order_id: shift.id,
-          mileage: offerData.mileage ? parseFloat(offerData.mileage) : undefined,
-          house: offerData.house ? parseFloat(offerData.house) : undefined,
-          hour_rate: offerData.hour_rate ? parseFloat(offerData.hour_rate) : undefined,
-          comment: offerData.comment || undefined
-        })
-      })
+      // Parse and prepare offer data - only include fields that have values
+      const offerPayload: {
+        mileage?: number
+        house?: number
+        hour_rate?: number
+        comment?: string
+      } = {}
 
-      const data = await response.json()
+      if (offerData.mileage && offerData.mileage.trim() !== '') {
+        offerPayload.mileage = parseFloat(offerData.mileage)
+      }
+      if (offerData.house && offerData.house.trim() !== '') {
+        offerPayload.house = parseFloat(offerData.house)
+      }
+      if (offerData.hour_rate && offerData.hour_rate.trim() !== '') {
+        offerPayload.hour_rate = parseFloat(offerData.hour_rate)
+      }
+      if (offerData.comment && offerData.comment.trim() !== '') {
+        offerPayload.comment = offerData.comment
+      }
 
-      if (data.success) {
+      const response = await sendPharmacistOffer(shift.id, offerPayload)
+
+      if (response.success) {
         toast({
           title: 'Success!',
-          description: 'Your offer has been sent to the pharmacy',
+          description: response.message || 'Your offer has been sent to the pharmacy',
         })
         setIsOfferDialogOpen(false)
         setOfferData({ mileage: '', house: '', hour_rate: '', comment: '' })
         // Refresh shift details
         fetchShiftDetails()
       } else {
-        throw new Error(data.error || 'Failed to send offer')
+        throw new Error(response.message || 'Failed to send offer')
       }
     } catch (err) {
       console.error('Error sending offer:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send your offer'
       toast({
         title: 'Error',
-        description: 'Failed to send your offer',
+        description: errorMessage,
         variant: 'destructive',
       })
     } finally {
@@ -350,15 +351,11 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-600">Map will be displayed here</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Lat: {shift.lat}, Lng: {shift.lng}
-                      </p>
-                    </div>
-                  </div>
+                  <ShiftLocationMap 
+                    lat={shift.lat} 
+                    lng={shift.lng} 
+                    address={shift.address}
+                  />
                 </CardContent>
               </Card>
 
