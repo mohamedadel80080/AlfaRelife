@@ -813,8 +813,13 @@ export async function cancelAcceptedShift(orderId: number): Promise<CancelShiftR
     throw new Error('No authentication token found. Please login.')
   }
 
+  const payload = {
+    order_id: orderId
+  }
+
   return apiRequest<CancelShiftResponse>(`/requests/cancell/${orderId}`, {
-    method: 'GET'
+    method: 'POST',
+    body: JSON.stringify(payload)
   })
 }
 
@@ -839,14 +844,9 @@ export interface UpcomingShift {
   applied_at: string | null
   applied: boolean
   applied_msg: string | null
-  pharmacy?: {
-    id: number
-    title: string
-    email: string
-    phone: string
-    address: string
-    city: string
-  }
+  pharmacy: string | null
+  faved: boolean
+  assigned: number
   addres?: {
     id: number
     title: string
@@ -858,6 +858,8 @@ export interface UpcomingShift {
     postcode: string
     district_id: number
     pharmacy_id: number
+    created_at: string
+    updated_at: string
   }
 }
 

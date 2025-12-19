@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
-import { acceptPharmacyOffer, sendPharmacistOffer } from '@/lib/api'
+import { acceptPharmacyOffer, sendPharmacistOffer, cancelAcceptedShift } from '@/lib/api'
 import { ShiftLocationMap } from '@/components/maps/ShiftLocationMap'
 
 interface ShiftDetailsPageProps {
@@ -88,6 +88,7 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [isAccepting, setIsAccepting] = useState(false)
   const [isSendingOffer, setIsSendingOffer] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false)
   
   const [offerData, setOfferData] = useState({
@@ -204,6 +205,36 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
       })
     } finally {
       setIsSendingOffer(false)
+    }
+  }
+
+  const handleCancelShift = async () => {
+    if (!shift) return
+
+    setIsCancelling(true)
+    try {
+      const response = await cancelAcceptedShift(shift.id)
+
+      if (response.status) {
+        toast({
+          title: 'Success!',
+          description: response.message || 'Shift cancelled successfully',
+        })
+        // Refresh shift details
+        fetchShiftDetails()
+      } else {
+        throw new Error(response.message || 'Failed to cancel shift')
+      }
+    } catch (err) {
+      console.error('Error cancelling shift:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel shift'
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -457,127 +488,128 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
               </Card>
 
               {/* Action Buttons */}
-              {!shift.applied ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {!shift.applied ? (
+                    // Pharmacist has NOT submitted an offer - show default buttons
+                    <>
+                      <Button 
+                        onClick={handleAcceptPharmacyOffer}
+                        disabled={isAccepting}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        {isAccepting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Accepting...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Accept Pharmacy Offer
+                          </>
+                        )}
+                      </Button>
+
+                      <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="w-full">
+                            <Send className="h-4 w-4 mr-2" />
+                            Send Pharmacist Offer
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Send Your Offer</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="mileage">Mileage</Label>
+                              <Input
+                                id="mileage"
+                                type="number"
+                                placeholder="0"
+                                value={offerData.mileage}
+                                onChange={(e) => setOfferData({ ...offerData, mileage: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="house">House</Label>
+                              <Input
+                                id="house"
+                                type="number"
+                                placeholder="0"
+                                value={offerData.house}
+                                onChange={(e) => setOfferData({ ...offerData, house: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="hour_rate">Hour Rate</Label>
+                              <Input
+                                id="hour_rate"
+                                type="number"
+                                placeholder="0"
+                                value={offerData.hour_rate}
+                                onChange={(e) => setOfferData({ ...offerData, hour_rate: e.target.value })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="comment">Comment (Optional)</Label>
+                              <Textarea
+                                id="comment"
+                                placeholder="Add any comments..."
+                                value={offerData.comment}
+                                onChange={(e) => setOfferData({ ...offerData, comment: e.target.value })}
+                                rows={3}
+                              />
+                            </div>
+                            <Button 
+                              onClick={handleSendPharmacistOffer}
+                              disabled={isSendingOffer}
+                              className="w-full"
+                            >
+                              {isSendingOffer ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Sending...
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="h-4 w-4 mr-2" />
+                                  Send Offer
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </>
+                  ) : (
+                    // Pharmacist has submitted an offer - show Cancel Shift button
                     <Button 
-                      onClick={handleAcceptPharmacyOffer}
-                      disabled={isAccepting}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      onClick={handleCancelShift}
+                      disabled={isCancelling}
+                      variant="destructive"
+                      className="w-full"
                     >
-                      {isAccepting ? (
+                      {isCancelling ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Accepting...
+                          Cancelling...
                         </>
                       ) : (
                         <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Accept Pharmacy Offer
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          Cancel Shift
                         </>
                       )}
                     </Button>
-
-                    <Dialog open={isOfferDialogOpen} onOpenChange={setIsOfferDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" className="w-full">
-                          <Send className="h-4 w-4 mr-2" />
-                          Send Pharmacist Offer
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Send Your Offer</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="mileage">Mileage</Label>
-                            <Input
-                              id="mileage"
-                              type="number"
-                              placeholder="0"
-                              value={offerData.mileage}
-                              onChange={(e) => setOfferData({ ...offerData, mileage: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="house">House</Label>
-                            <Input
-                              id="house"
-                              type="number"
-                              placeholder="0"
-                              value={offerData.house}
-                              onChange={(e) => setOfferData({ ...offerData, house: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="hour_rate">Hour Rate</Label>
-                            <Input
-                              id="hour_rate"
-                              type="number"
-                              placeholder="0"
-                              value={offerData.hour_rate}
-                              onChange={(e) => setOfferData({ ...offerData, hour_rate: e.target.value })}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="comment">Comment (Optional)</Label>
-                            <Textarea
-                              id="comment"
-                              placeholder="Add any comments..."
-                              value={offerData.comment}
-                              onChange={(e) => setOfferData({ ...offerData, comment: e.target.value })}
-                              rows={3}
-                            />
-                          </div>
-                          <Button 
-                            onClick={handleSendPharmacistOffer}
-                            disabled={isSendingOffer}
-                            className="w-full"
-                          >
-                            {isSendingOffer ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Sending...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="h-4 w-4 mr-2" />
-                                Send Offer
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Application Status</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-center py-4">
-                      <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                      <p className="text-lg font-semibold text-green-700 mb-2">Already Applied</p>
-                      {shift.applied_at && (
-                        <p className="text-sm text-gray-600">
-                          Applied on: {new Date(shift.applied_at).toLocaleString()}
-                        </p>
-                      )}
-                      {shift.applied_msg && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          {shift.applied_msg}
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                  )}
+                </CardContent>
+              </Card>
 
               {/* District Info */}
               <Card>

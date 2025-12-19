@@ -6,7 +6,7 @@ This document describes the integration with the external pharmacy registration 
 
 ### External API Base URL
 ```
-https://newpharmacy.syntecheg.com/api/
+http://127.0.0.1:8000/api/
 ```
 
 ### Proxy API Routes (Used to avoid CORS)
@@ -501,7 +501,7 @@ The proxy routes make server-side requests to the external API, which bypasses C
 **How it works:**
 1. Frontend calls `/api/proxy/register` (same origin, no CORS)
 2. Next.js API route receives request
-3. Server-side fetch to `https://newpharmacy.syntecheg.com/api/register`
+3. Server-side fetch to `http://127.0.0.1:8000/api/register`
 4. Response forwarded back to frontend
 
 ### Common Issues

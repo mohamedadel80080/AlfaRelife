@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_BASE_URL = 'https://newpharmacy.syntecheg.com/api'
+const API_BASE_URL = 'http://127.0.0.1:8000/api'
 
 export async function POST(request: NextRequest) {
   try {

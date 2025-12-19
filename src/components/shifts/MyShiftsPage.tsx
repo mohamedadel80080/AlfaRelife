@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ShiftCard } from './ShiftCard'
 import { AssignedShiftCard } from './AssignedShiftCard'
-import { fetchAssignedRequests, AssignedShift } from '@/lib/api'
+import { GroupedShiftsRenderer } from './GroupedShiftsRenderer'
+import { fetchAssignedRequests, AssignedShift, fetchUpcomingShifts, UpcomingShift } from '@/lib/api'
 import { 
   Briefcase,
   Calendar,
@@ -100,8 +101,75 @@ export function MyShiftsPage() {
             [status]: []
           }))
         }
+      } else if (status === 'upcoming') {
+        // Use new API for upcoming shifts
+        const response = await fetchUpcomingShifts()
+
+        console.log('Upcoming shifts API response:', response);
+
+        // Handle both response formats: { status, data } or just { data }
+        const shiftsData = response.data || (response as any).data;
+        const hasData = Array.isArray(shiftsData) && shiftsData.length > 0;
+
+        if (hasData) {
+          console.log('Raw upcoming shifts data:', shiftsData);
+          
+          // Filter for upcoming shifts based on:
+          // 1. status (should be active/confirmed)
+          // 2. date > now()
+          // 3. assigned or applied flags
+          const now = new Date();
+          now.setHours(0, 0, 0, 0); // Set to start of today for proper comparison
+          
+          const filteredShifts = shiftsData.filter((shift: UpcomingShift) => {
+            // Check if date is in the future (including today)
+            // Parse YYYY-MM-DD format directly
+            const shiftDate = new Date(shift.date);
+            shiftDate.setHours(0, 0, 0, 0); // Set to start of day for proper comparison
+            const isFutureDate = shiftDate >= now;
+            
+            // Check if shift is assigned or applied
+            const isAssignedOrApplied = shift.assigned > 0 || shift.applied;
+            
+            console.log(`Shift ${shift.id}: date=${shift.date}, isFutureDate=${isFutureDate}, assigned=${shift.assigned}, applied=${shift.applied}, isAssignedOrApplied=${isAssignedOrApplied}`);
+            
+            return isFutureDate && isAssignedOrApplied;
+          });
+
+          console.log('Filtered upcoming shifts:', filteredShifts);
+
+          // Transform API data to match Shift interface
+          const transformedShifts: Shift[] = filteredShifts.map((shift: UpcomingShift) => ({
+            id: shift.id,
+            date: shift.date,
+            from: shift.from,
+            to: shift.to,
+            hours: shift.hours,
+            pharmacy_name: shift.pharmacy || shift.addres?.title || 'N/A',
+            pharmacy_address: shift.address || shift.addres?.address || 'N/A',
+            city: shift.addres?.city || 'N/A',
+            district: 'N/A', // District info not in upcoming API response
+            total: shift.total,
+            earning: shift.total, // Using total as earning
+            status: 'upcoming'
+          }))
+
+          console.log('Transformed upcoming shifts:', transformedShifts);
+
+          setShifts(prev => ({
+            ...prev,
+            [status]: transformedShifts
+          }))
+        } else {
+          console.log('No upcoming shifts data or invalid response');
+          // Empty response - no upcoming shifts
+          setShifts(prev => ({
+            ...prev,
+            [status]: []
+          }))
+        }
       } else {
-        // Use existing mock API for upcoming and cancel tabs
+        // Use existing mock API for cancel tab
         const response = await fetch(`/api/shifts/my-shifts?status=${status}`)
         const data = await response.json()
 
@@ -210,6 +278,11 @@ export function MyShiftsPage() {
 
     if (shifts[status].length === 0) {
       return renderEmptyState(status)
+    }
+
+    // For upcoming tab, render grouped shifts
+    if (status === 'upcoming') {
+      return <GroupedShiftsRenderer shifts={shifts[status]} />;
     }
 
     return (
