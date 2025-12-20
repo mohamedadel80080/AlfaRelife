@@ -10,7 +10,8 @@ import {
   Lock, 
   Settings, 
   Home,
-  ChevronRight
+  ChevronRight,
+  CreditCard
 } from 'lucide-react'
 
 const profileNavItems = [
@@ -25,6 +26,12 @@ const profileNavItems = [
     label: 'Edit Profile',
     icon: Edit,
     description: 'Update your personal and professional details'
+  },
+  {
+    href: '/profile/bank-account',
+    label: 'Bank Account',
+    icon: CreditCard,
+    description: 'Manage your bank account information'
   },
   {
     href: '/profile/password',
@@ -59,7 +66,7 @@ export function ProfileNav() {
           </Link>
         </div>
 
-        <nav className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <nav className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {profileNavItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href

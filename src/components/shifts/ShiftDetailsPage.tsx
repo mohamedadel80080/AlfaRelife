@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/hooks/use-toast'
-import { acceptPharmacyOffer, sendPharmacistOffer, cancelAcceptedShift } from '@/lib/api'
+import { acceptPharmacyOffer, sendPharmacistOffer, cancelAcceptedShift, fetchShiftDetails as apiFetchShiftDetails } from '@/lib/api'
 import { ShiftLocationMap } from '@/components/maps/ShiftLocationMap'
 
 interface ShiftDetailsPageProps {
@@ -69,6 +69,7 @@ interface Shift {
   applied: boolean
   applied_at: string | null
   applied_msg: string | null
+  status: number
   languages: Array<{ id: number; title: string; selected: boolean }>
   skills: Array<{ id: number; title: string; selected: boolean }>
   softwares: Array<{ id: number; title: string; selected: boolean }>
@@ -107,19 +108,26 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch(`/api/shifts/${shiftId}`)
-      const data = await response.json()
+      // Use the real API to fetch shift details from backend
+      const response = await apiFetchShiftDetails(shiftId)
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch shift details')
-      }
+      console.log('Shift details API response:', response)
 
-      if (data.success && data.data) {
-        setShift(data.data)
+      // Handle different response formats
+      if (response.data) {
+        setShift(response.data)
+      } else if (response.status === false) {
+        // Backend returned error with status: false
+        throw new Error(response.message || 'Failed to fetch shift details')
+      } else {
+        // Unexpected response format
+        console.error('Unexpected response format:', response)
+        throw new Error('Invalid response format from server')
       }
     } catch (err) {
       console.error('Error fetching shift details:', err)
-      setError('Failed to load shift details')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load shift details'
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -132,7 +140,14 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
     try {
       const response = await acceptPharmacyOffer(shift.id)
 
-      if (response.success) {
+      // Check for success - accept if success is true OR if message indicates success
+      const isSuccess = response.success === true || 
+                       (response.message && (
+                         response.message.toLowerCase().includes('accept') ||
+                         response.message.toLowerCase().includes('success')
+                       ))
+
+      if (isSuccess) {
         toast({
           title: 'Success!',
           description: response.message || 'Pharmacy offer accepted successfully',
@@ -183,7 +198,14 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
 
       const response = await sendPharmacistOffer(shift.id, offerPayload)
 
-      if (response.success) {
+      // Check for success - accept if success is true OR if message indicates success
+      const isSuccess = response.success === true || 
+                       (response.message && (
+                         response.message.toLowerCase().includes('sent') ||
+                         response.message.toLowerCase().includes('success')
+                       ))
+
+      if (isSuccess) {
         toast({
           title: 'Success!',
           description: response.message || 'Your offer has been sent to the pharmacy',
@@ -215,7 +237,14 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
     try {
       const response = await cancelAcceptedShift(shift.id)
 
-      if (response.status) {
+      // Check for success - accept if status is true OR if message indicates success
+      const isSuccess = response.status === true || 
+                       (response.message && (
+                         response.message.toLowerCase().includes('cancel') ||
+                         response.message.toLowerCase().includes('success')
+                       ))
+
+      if (isSuccess) {
         toast({
           title: 'Success!',
           description: response.message || 'Shift cancelled successfully',
@@ -239,7 +268,8 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -342,7 +372,7 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-start gap-4 mb-4">
-                    {shift.pharmacy.logo && (
+                    {shift.pharmacy?.logo && (
                       <img 
                         src={shift.pharmacy.logo} 
                         alt={shift.pharmacy.title}
@@ -350,25 +380,25 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                       />
                     )}
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-900">{shift.pharmacy.title}</h3>
-                      <p className="text-gray-600">{shift.pharmacy.city}</p>
+                      <h3 className="text-xl font-bold text-gray-900">{shift.pharmacy?.title}</h3>
+                      <p className="text-gray-600">{shift.pharmacy?.city}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-700">{shift.pharmacy.phone}</span>
+                      <span className="text-gray-700">{shift.pharmacy?.phone}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-gray-400" />
-                      <span className="text-gray-700">{shift.pharmacy.email}</span>
+                      <span className="text-gray-700">{shift.pharmacy?.email}</span>
                     </div>
                   </div>
 
                   <div className="mt-4 pt-4 border-t">
                     <p className="text-sm font-medium text-gray-600 mb-1">Address</p>
-                    <p className="text-gray-800">{shift.pharmacy.address}</p>
+                    <p className="text-gray-800">{shift.pharmacy?.address}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -391,7 +421,7 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
               </Card>
 
               {/* Requirements Cards */}
-              {shift.languages.length > 0 && (
+              {shift.languages && shift.languages.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Required Languages</CardTitle>
@@ -408,7 +438,7 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                 </Card>
               )}
 
-              {shift.skills.length > 0 && (
+              {shift.skills && shift.skills.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Required Skills</CardTitle>
@@ -425,7 +455,7 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                 </Card>
               )}
 
-              {shift.softwares.length > 0 && (
+              {shift.softwares && shift.softwares.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Required Software</CardTitle>
@@ -456,7 +486,7 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Hour Rate:</span>
-                    <span className="font-semibold">${shift.hour_rate}/hr</span>
+                    <span className="font-semibold">${parseFloat(shift.hour_rate.toString()).toFixed(2)}/hr</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Mileage:</span>
@@ -493,8 +523,28 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                   <CardTitle>Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {!shift.applied ? (
-                    // Pharmacist has NOT submitted an offer - show default buttons
+                  {shift.applied && shift.status === 2 ? (
+                    // Applied and status is 2 - show only Cancel Shift button
+                    <Button 
+                      onClick={handleCancelShift}
+                      disabled={isCancelling}
+                      variant="destructive"
+                      className="w-full"
+                    >
+                      {isCancelling ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          Cancel Shift
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    // Not applied or status is not 2 - show accept and offer buttons
                     <>
                       <Button 
                         onClick={handleAcceptPharmacyOffer}
@@ -587,48 +637,30 @@ export function ShiftDetailsPage({ shiftId }: ShiftDetailsPageProps) {
                         </DialogContent>
                       </Dialog>
                     </>
-                  ) : (
-                    // Pharmacist has submitted an offer - show Cancel Shift button
-                    <Button 
-                      onClick={handleCancelShift}
-                      disabled={isCancelling}
-                      variant="destructive"
-                      className="w-full"
-                    >
-                      {isCancelling ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Cancelling...
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-4 w-4 mr-2" />
-                          Cancel Shift
-                        </>
-                      )}
-                    </Button>
                   )}
                 </CardContent>
               </Card>
 
               {/* District Info */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>District Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">District:</span>
-                      <span className="font-semibold">{shift.district.name}</span>
+              {shift.district && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>District Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">District:</span>
+                        <span className="font-semibold">{shift.district.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Tax Rate:</span>
+                        <span className="font-semibold">{shift.district.tax}%</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tax Rate:</span>
-                      <span className="font-semibold">{shift.district.tax}%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

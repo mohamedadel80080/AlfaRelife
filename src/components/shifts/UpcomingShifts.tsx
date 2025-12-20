@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,10 +10,11 @@ import {
   MapPin,
   Building,
   DollarSign,
-  ChevronRight,
-  AlertCircle
+  AlertCircle,
+  XCircle
 } from 'lucide-react'
-import { fetchUpcomingShifts, UpcomingShift, getAuthToken } from '@/lib/api'
+import { fetchUpcomingShifts, UpcomingShift, getAuthToken, cancelAcceptedShift } from '@/lib/api'
+import { toast } from '@/hooks/use-toast'
 
 interface UpcomingShiftsProps {
   className?: string
@@ -24,6 +24,7 @@ export function UpcomingShifts({ className = '' }: UpcomingShiftsProps) {
   const [shifts, setShifts] = useState<UpcomingShift[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cancellingShiftId, setCancellingShiftId] = useState<number | null>(null)
 
   const fetchShifts = async () => {
     try {
@@ -126,6 +127,41 @@ export function UpcomingShifts({ className = '' }: UpcomingShiftsProps) {
     return `${displayHour}:${minutes} ${period}`
   }
 
+  const handleCancelShift = async (shiftId: number) => {
+    setCancellingShiftId(shiftId)
+    try {
+      const response = await cancelAcceptedShift(shiftId)
+
+      // Check for success - accept if status is true OR if message indicates success
+      const isSuccess = response.status === true || 
+                       (response.message && (
+                         response.message.toLowerCase().includes('cancel') ||
+                         response.message.toLowerCase().includes('success')
+                       ))
+
+      if (isSuccess) {
+        toast({
+          title: 'Success!',
+          description: response.message || 'Shift cancelled successfully',
+        })
+        // Refresh the shifts list
+        await fetchShifts()
+      } else {
+        throw new Error(response.message || 'Failed to cancel shift')
+      }
+    } catch (err) {
+      console.error('Error cancelling shift:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to cancel shift'
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      })
+    } finally {
+      setCancellingShiftId(null)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className={`bg-white rounded-2xl border border-gray-200 shadow-sm p-6 ${className}`}>
@@ -206,32 +242,28 @@ export function UpcomingShifts({ className = '' }: UpcomingShiftsProps) {
             const city = shift.addres?.city || 'N/A'
             
             return (
-              <Link key={shift.id} href={`/shifts/${shift.id}`}>
-                <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer border border-gray-200">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Calendar className="h-4 w-4 text-gray-500" />
-                          <span className="font-semibold text-gray-900">
-                            {formatDate(shift.date)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            {formatTime(shift.from)} - {formatTime(shift.to)}
-                            {shift.hours && ` (${shift.hours}h)`}
-                          </span>
-                        </div>
+              <Card key={shift.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span className="font-semibold text-gray-900">
+                          {formatDate(shift.date)}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                          Upcoming
-                        </Badge>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {formatTime(shift.from)} - {formatTime(shift.to)}
+                          {shift.hours && ` (${shift.hours}h)`}
+                        </span>
                       </div>
                     </div>
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                      Upcoming
+                    </Badge>
+                  </div>
 
                     <div className="space-y-2 mb-3">
                       <div className="flex items-start gap-2">
@@ -260,7 +292,7 @@ export function UpcomingShifts({ className = '' }: UpcomingShiftsProps) {
                           <p className="text-xs text-gray-500">Hourly Rate</p>
                           <p className="font-semibold text-gray-900 flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            {shift.hour_rate}
+                            {parseFloat(shift.hour_rate.toString()).toFixed(2)}
                           </p>
                         </div>
                         <div>
@@ -271,12 +303,29 @@ export function UpcomingShifts({ className = '' }: UpcomingShiftsProps) {
                           </p>
                         </div>
                       </div>
+                      <Button
+                        onClick={() => handleCancelShift(shift.id)}
+                        disabled={cancellingShiftId === shift.id}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        {cancellingShiftId === shift.id ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                            Cancelling...
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Cancel
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            )
-          })}
+              )
+            })}
         </div>
       )}
     </div>

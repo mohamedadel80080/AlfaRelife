@@ -29,6 +29,17 @@ interface ShiftPreviewCardProps {
 }
 
 export function ShiftPreviewCard({ shift, onQuickApply }: ShiftPreviewCardProps) {
+  const formatDate = (dateString: string) => {
+    // Parse YYYY-MM-DD format correctly
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'available':
@@ -81,7 +92,7 @@ export function ShiftPreviewCard({ shift, onQuickApply }: ShiftPreviewCardProps)
               <span>{shift.location}</span>
               <span className="mx-2">•</span>
               <Clock className="h-4 w-4" />
-              <span>{shift.date}</span>
+              <span>{formatDate(shift.date)}</span>
               <span className="mx-2">•</span>
               <span>{shift.time}</span>
             </div>
@@ -101,7 +112,7 @@ export function ShiftPreviewCard({ shift, onQuickApply }: ShiftPreviewCardProps)
             <div className="text-gray-600">
               <div className="flex items-center space-x-2">
                 <DollarSign className="h-4 w-4" />
-                <span className="font-medium">${shift.hourlyRate}/hr</span>
+                <span className="font-medium">${parseFloat(shift.hourlyRate.toString()).toFixed(2)}/hr</span>
               </div>
               <span className="text-sm text-gray-500">for {shift.hours} hours</span>
             </div>

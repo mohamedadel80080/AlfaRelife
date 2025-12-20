@@ -48,7 +48,8 @@ export function AssignedShiftCard({ shift, onAcceptSuccess, onCancelSuccess }: A
   const [isCancelled, setIsCancelled] = useState(shift.cancelled || false)
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       year: 'numeric', 
@@ -74,7 +75,14 @@ export function AssignedShiftCard({ shift, onAcceptSuccess, onCancelSuccess }: A
     try {
       const response = await acceptAssignedShift(shift.id)
 
-      if (response.status) {
+      // Check for success - accept if status is true OR if message indicates success
+      const isSuccess = response.status === true || 
+                       (response.message && (
+                         response.message.toLowerCase().includes('accept') ||
+                         response.message.toLowerCase().includes('success')
+                       ))
+
+      if (isSuccess) {
         setIsAccepted(true)
         toast({
           title: 'Shift Accepted Successfully',
@@ -111,7 +119,14 @@ export function AssignedShiftCard({ shift, onAcceptSuccess, onCancelSuccess }: A
     try {
       const response = await cancelAcceptedShift(shift.id)
 
-      if (response.status) {
+      // Check for success - accept if status is true OR if message indicates success
+      const isSuccess = response.status === true || 
+                       (response.message && (
+                         response.message.toLowerCase().includes('cancel') ||
+                         response.message.toLowerCase().includes('success')
+                       ))
+
+      if (isSuccess) {
         setIsCancelled(true)
         setIsAccepted(false) // Mark as no longer accepted
         toast({

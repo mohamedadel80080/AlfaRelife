@@ -57,7 +57,8 @@ interface UpcomingShiftCardProps {
 
 export function UpcomingShiftCard({ shift }: UpcomingShiftCardProps) {
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       year: 'numeric', 
@@ -134,7 +135,7 @@ export function UpcomingShiftCard({ shift }: UpcomingShiftCardProps) {
                 <p className="text-xs text-gray-500">Hourly Rate</p>
                 <p className="font-semibold text-gray-900 flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
-                  {shift.hour_rate}
+                  {parseFloat(shift.hour_rate.toString()).toFixed(2)}
                 </p>
               </div>
               <div>

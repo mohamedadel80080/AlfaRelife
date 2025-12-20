@@ -84,7 +84,25 @@ export async function apiRequest<T = any>(
     throw new Error('Session expired. Please login again.')
   }
 
-  const data = await response.json()
+  // Safely parse JSON response
+  let data: any
+  try {
+    const text = await response.text()
+    if (text) {
+      data = JSON.parse(text)
+    } else {
+      // Empty response - treat as success for some operations
+      data = { status: true, message: 'Operation completed successfully' }
+    }
+  } catch (parseError) {
+    console.error('Failed to parse JSON response:', parseError)
+    // Check if response is HTML (common error case)
+    const contentType = response.headers.get('content-type')
+    if (contentType?.includes('text/html')) {
+      throw new Error('Received HTML instead of JSON. Please check API endpoint and authentication.')
+    }
+    throw new Error('Invalid response format from server')
+  }
 
   if (!response.ok) {
     // Handle validation errors
@@ -535,6 +553,53 @@ export async function changePassword(data: ChangePasswordRequest): Promise<Chang
 }
 
 /**
+ * Bank Account API interfaces and functions
+ */
+export interface BankAccountData {
+  id?: number
+  transit: string
+  institution: string
+  account: string
+  business_name: string
+  business_number: string
+  created_at?: string
+  updated_at?: string
+}
+
+export interface BankAccountResponse {
+  status?: boolean
+  success?: string
+  message?: string
+  data?: BankAccountData
+  stripe_account_id?: string
+  remediation_link?: string
+}
+
+export interface UpdateBankAccountRequest {
+  transit: string
+  institution: string
+  account: string
+  business_name: string
+  business_number: string
+}
+
+/**
+ * Update bank account information
+ */
+export async function updateBankAccount(data: UpdateBankAccountRequest): Promise<BankAccountResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  return apiRequest<BankAccountResponse>('/bank/update', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  })
+}
+
+/**
  * Home/Shifts API interfaces and functions
  */
 export interface HomeFilters {
@@ -710,22 +775,18 @@ export interface AssignedShift {
   lat: string
   lng: string
   pharmacy_id: number
+  pharmacy: string | null  // Pharmacy name as string
   status: number
   hour_rate: number
   total: number
   created_at: string
-  address_id: number
+  address_id?: number
   applied_at: string | null
   applied: boolean
   applied_msg: string | null
-  pharmacy?: {
-    id: number
-    title: string
-    email: string
-    phone: string
-    address: string
-    city: string
-  }
+  distance: number
+  faved: boolean
+  assigned: number
   addres?: {
     id: number
     title: string
@@ -737,12 +798,14 @@ export interface AssignedShift {
     postcode: string
     district_id: number
     pharmacy_id: number
+    created_at?: string
+    updated_at?: string
   }
 }
 
 export interface AssignedRequestsResponse {
-  status: boolean
   data: AssignedShift[]
+  status?: boolean
   message?: string
 }
 
@@ -820,6 +883,81 @@ export async function cancelAcceptedShift(orderId: number): Promise<CancelShiftR
   return apiRequest<CancelShiftResponse>(`/requests/cancell/${orderId}`, {
     method: 'POST',
     body: JSON.stringify(payload)
+  })
+}
+
+/**
+ * Shift Details API interfaces and functions
+ */
+export interface ShiftDetails {
+  id: number
+  date: string
+  from: string
+  to: string
+  hours: number
+  address: string
+  lat: string
+  lng: string
+  city: string
+  district_id: number
+  district: {
+    id: number
+    name: string
+    tax: number
+  }
+  pharmacy_id: number
+  pharmacy: {
+    id: number
+    title: string
+    email: string
+    phone: string
+    address: string
+    logo: string
+    cover: string
+    city: string
+  }
+  hour_rate: number
+  mileage: number
+  house: number
+  earning: number
+  profit: number
+  tax: number
+  total: number
+  comments: string | null
+  applied: boolean
+  applied_at: string | null
+  applied_msg: string | null
+  status: number
+  languages: Array<{ id: number; title: string; selected: boolean }>
+  skills: Array<{ id: number; title: string; selected: boolean }>
+  softwares: Array<{ id: number; title: string; selected: boolean }>
+  addres: {
+    id: number
+    title: string
+    phone: string
+    city: string
+    postcode: string
+  }
+}
+
+export interface ShiftDetailsResponse {
+  status: boolean
+  data: ShiftDetails
+  message?: string
+}
+
+/**
+ * Fetch detailed information for a specific shift by ID
+ */
+export async function fetchShiftDetails(shiftId: number | string): Promise<ShiftDetailsResponse> {
+  const token = getAuthToken()
+  
+  if (!token) {
+    throw new Error('No authentication token found. Please login.')
+  }
+
+  return apiRequest<ShiftDetailsResponse>(`/shifts/${shiftId}`, {
+    method: 'GET'
   })
 }
 

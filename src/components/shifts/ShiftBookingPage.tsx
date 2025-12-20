@@ -145,7 +145,8 @@ export function ShiftBookingPage() {
   const filteredShifts = shifts.filter(shift => {
     if (!dateFrom && !dateTo) return true
     
-    const shiftDate = new Date(shift.date.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const shiftDate = new Date(shift.date)
     
     if (dateFrom && shiftDate < dateFrom) return false
     if (dateTo && shiftDate > dateTo) return false
@@ -164,8 +165,9 @@ export function ShiftBookingPage() {
 
   // Get all unique dates and sort them
   const sortedDates = Object.keys(groupedShifts).sort((a, b) => {
-    const dateA = new Date(a.split('-').reverse().join('-'))
-    const dateB = new Date(b.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const dateA = new Date(a)
+    const dateB = new Date(b)
     return dateA.getTime() - dateB.getTime()
   })
 
@@ -197,7 +199,8 @@ export function ShiftBookingPage() {
   }
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -461,7 +464,7 @@ export function ShiftBookingPage() {
                                 <p className="text-xs text-gray-500 font-medium">Hourly Rate</p>
                                 <p className="text-lg font-bold text-gray-900 flex items-center gap-1">
                                   <DollarSign className="h-4 w-4" />
-                                  {shift.hour_rate}
+                                  {parseFloat(shift.hour_rate.toString()).toFixed(2)}
                                 </p>
                               </div>
                               <div className="space-y-1">

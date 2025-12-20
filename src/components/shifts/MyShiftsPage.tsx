@@ -72,7 +72,7 @@ export function MyShiftsPage() {
       if (status === 'assigned') {
         const response = await fetchAssignedRequests()
 
-        if (response.status && response.data) {
+        if (response.data && Array.isArray(response.data)) {
           // Transform API data to match Shift interface
           const transformedShifts: Shift[] = response.data.map((shift: AssignedShift) => ({
             id: shift.id,
@@ -80,9 +80,9 @@ export function MyShiftsPage() {
             from: shift.from,
             to: shift.to,
             hours: shift.hours,
-            pharmacy_name: shift.pharmacy?.title || shift.addres?.title || 'N/A',
+            pharmacy_name: shift.pharmacy || shift.addres?.title || 'N/A',
             pharmacy_address: shift.address || shift.addres?.address || 'N/A',
-            city: shift.pharmacy?.city || shift.addres?.city || 'N/A',
+            city: shift.addres?.city || 'N/A',
             district: 'N/A', // District info not in assigned API response
             total: shift.total,
             earning: shift.total, // Using total as earning

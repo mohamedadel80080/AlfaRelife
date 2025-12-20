@@ -31,7 +31,8 @@ interface ShiftCardProps {
 
 export function ShiftCard({ shift }: ShiftCardProps) {
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString.split('-').reverse().join('-'))
+    // Parse YYYY-MM-DD format correctly
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
       weekday: 'short', 
       year: 'numeric', 
