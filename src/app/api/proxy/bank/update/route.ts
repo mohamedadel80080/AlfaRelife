@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api'
 
-// Only POST is needed for bank account updates
+// Bank account update endpoint
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
